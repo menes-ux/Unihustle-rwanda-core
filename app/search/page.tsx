@@ -90,7 +90,6 @@ export default function SearchPage() {
 
           {/* Results Section Placeholder */}
           <div className="text-center py-16">
-            <div className="text-6xl mb-4">🎓</div>
             <p className="text-base font-medium" style={{ color: "#78716C" }}>
               Enter a skill or keyword to find students
             </p>

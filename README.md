@@ -1,3 +1,11 @@
+Group4 members:
+1. Jean Nepo Munezero
+2. Manuelle Aseye Ackun
+3.
+4.
+5.
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

@@ -1,6 +1,6 @@
 Group4 members:
 1. Jean Nepo Munezero
-2.
+2. Manuelle Aseye Ackun
 3.
 4.
 5.

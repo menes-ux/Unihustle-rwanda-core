@@ -195,6 +195,17 @@ Order lifecycle management, delivery confirmation, payment release, and in-app n
 - Cohort: January 2026
 - Team: Riptide (Group 4)
 
+## Team
+
+| Name | Role |
+|---|---|
+| Menes Adisso | Project Manager |
+| Jean Nepo Munezero | Backend Lead |
+| Manuelle Ackun | Database Architect |
+| David Achibiri | Full-Stack Developer |
+| Bonheur Munezero | UI/UX Designer |
+| Gilbert Ntivunwa | Research Lead |
+
 ---
 
 ## License

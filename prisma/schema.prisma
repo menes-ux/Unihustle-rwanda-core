@@ -5,10 +5,71 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  user_id Int @id @default(autoincrement())
+  full_name String
+  email String @unique
+  role Role 
+  
+  hustles Hustle[] @relation("BusinessHustles")
+  applications Application[]
+}
+
+model Hustle {
+  hustle_id Int @id @default(autoincrement())
+  title String
+  category String
+  status HustleStatus
+
+  employer_id Int
+  employer User @relation("BusinessHustles", fields: [employer_id], references: [user_id])
+
+  applications Application[]
+  reviews Review[]
+}
+
+model Application {
+  app_id Int @id @default(autoincrement())
+
+  hustle_id Int
+  student_id Int
+
+  hustle Hustle @relation(fields: [hustle_id], references: [hustle_id])
+  student User @relation(fields: [student_id], references: [user_id])
+
+  status ApplicationStatus
+}
+
+model Review {
+  review_id Int @id @default(autoincrement())
+
+  hustle_id Int
+  rating Int
+  comment String
+
+  hustle Hustle @relation(fields: [hustle_id], references: [hustle_id])
+}
+
+enum Role {
+  student
+  business
+}
+
+enum HustleStatus {
+  open
+  in_progress
+  completed
+}
+
+enum ApplicationStatus {
+  pending
+  accepted
+  rejected
 }

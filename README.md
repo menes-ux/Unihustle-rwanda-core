@@ -137,6 +137,9 @@ Landing Page
 
 ## Design System
 
+Figma file: https://www.figma.com/design/KFMF6vAH1lGwIPpNkUjrPZ/UniHustle-designs?node-id=0-1&p=f&t=b98LY287834xZMXQ-0
+
+
 | Token | Value |
 |---|---|
 | Primary font | Plus Jakarta Sans |

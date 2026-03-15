@@ -1,15 +1,11 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -18,43 +14,48 @@ model User {
   email String @unique
   role Role 
   
-  hustles Hustle[] @relation("BusinessHustles")
-  applications Application[]
+  // A student can create many gigs
+  gigs Gig[] @relation("StudentGigs")
+  
+  // A business can place many orders
+  orders Order[] @relation("BusinessOrders")
 }
 
-model Hustle {
-  hustle_id Int @id @default(autoincrement())
+model Gig {
+  gig_id Int @id @default(autoincrement())
   title String
   category String
-  status HustleStatus
+  price Int @default(0)
+  status GigStatus
 
-  employer_id Int
-  employer User @relation("BusinessHustles", fields: [employer_id], references: [user_id])
+  // The Student who created the gig
+  student_id Int
+  student User @relation("StudentGigs", fields: [student_id], references: [user_id])
 
-  applications Application[]
+  orders Order[]
   reviews Review[]
 }
 
-model Application {
-  app_id Int @id @default(autoincrement())
+model Order {
+  order_id Int @id @default(autoincrement())
 
-  hustle_id Int
-  student_id Int
+  gig_id Int
+  buyer_id Int // The Business buying the gig
 
-  hustle Hustle @relation(fields: [hustle_id], references: [hustle_id])
-  student User @relation(fields: [student_id], references: [user_id])
+  gig Gig @relation(fields: [gig_id], references: [gig_id])
+  buyer User @relation("BusinessOrders", fields: [buyer_id], references: [user_id])
 
-  status ApplicationStatus
+  status OrderStatus
 }
 
 model Review {
   review_id Int @id @default(autoincrement())
 
-  hustle_id Int
+  gig_id Int
   rating Int
   comment String
 
-  hustle Hustle @relation(fields: [hustle_id], references: [hustle_id])
+  gig Gig @relation(fields: [gig_id], references: [gig_id])
 }
 
 enum Role {
@@ -62,14 +63,14 @@ enum Role {
   business
 }
 
-enum HustleStatus {
-  open
-  in_progress
-  completed
+enum GigStatus {
+  active
+  paused
 }
 
-enum ApplicationStatus {
+enum OrderStatus {
   pending
-  accepted
-  rejected
+  in_progress
+  completed
+  cancelled
 }

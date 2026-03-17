@@ -23,11 +23,18 @@ model User {
   // Relations
   gigs           Gig[]           @relation("StudentGigs")
   orders         Order[]         @relation("BusinessOrders")
-
+  portfolio_items PortfolioItem[] // Links to their personal projects
 }
 
 
-
+model PortfolioItem {
+  portfolio_id Int    @id @default(autoincrement())
+  title        String // e.g., "Malaria Tracker UI"
+  link         String // Link to GitHub, Behance, or live site
+  
+  student_id   Int
+  student      User   @relation(fields: [student_id], references: [user_id])
+}
 
 model Gig {
   gig_id   Int       @id @default(autoincrement())

@@ -11,35 +11,53 @@ interface Gig {
   seller: string;
   initials: string;
   avatarColor: string;
+  university: string;
   category: string;
-  rating: number;
-  reviews: number;
   price: number;
   deliveryDays: number;
   tags: string[];
+  cohortYear: number; // year they joined — access expires after 2 years
   featured?: boolean;
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
+// Simulated "current year" for cohort access logic
+const CURRENT_YEAR = 2026;
+
 const ALL_GIGS: Gig[] = [
-  { id: 1,  title: 'I will build a full-stack web app with Next.js and Supabase',   seller: 'David Achibiri',    initials: 'DA', avatarColor: '#10B981', category: 'Development', rating: 4.9, reviews: 12, price: 60000, deliveryDays: 7,  tags: ['React', 'Next.js', 'API'],        featured: true },
-  { id: 2,  title: 'I will design a complete brand identity and logo system',        seller: 'Manuelle Ackun',    initials: 'MA', avatarColor: '#8B5CF6', category: 'Design',      rating: 5.0, reviews: 19, price: 25000, deliveryDays: 5,  tags: ['Figma', 'Branding', 'Logo'],       featured: true },
-  { id: 3,  title: 'I will translate up to 1000 words to French or Kinyarwanda',    seller: 'Jean Nepo M.',      initials: 'JN', avatarColor: '#3B82F6', category: 'Writing',     rating: 4.8, reviews: 9,  price: 8000,  deliveryDays: 2,  tags: ['French', 'Kinyarwanda', 'Docs']               },
-  { id: 4,  title: 'I will set up your PostgreSQL database with full schema',        seller: 'David Achibiri',    initials: 'DA', avatarColor: '#10B981', category: 'Development', rating: 4.9, reviews: 12, price: 15000, deliveryDays: 3,  tags: ['PostgreSQL', 'SQL', 'Backend']                 },
-  { id: 5,  title: 'I will create a month of social media content for your brand',  seller: 'Bonheur Munezero',  initials: 'BM', avatarColor: '#F59E0B', category: 'Marketing',   rating: 4.7, reviews: 6,  price: 30000, deliveryDays: 6,  tags: ['Instagram', 'Content', 'Strategy']             },
-  { id: 6,  title: 'I will tutor you in mathematics or computer science',            seller: 'Gilbert Ntivunwa',  initials: 'GN', avatarColor: '#EF4444', category: 'Education',   rating: 4.9, reviews: 14, price: 10000, deliveryDays: 1,  tags: ['Math', 'CS', 'Online'],           featured: true },
-  { id: 7,  title: 'I will build and style a responsive landing page in HTML/CSS',  seller: 'Jean Nepo M.',      initials: 'JN', avatarColor: '#3B82F6', category: 'Development', rating: 4.6, reviews: 5,  price: 20000, deliveryDays: 4,  tags: ['HTML', 'CSS', 'Responsive']                    },
-  { id: 8,  title: 'I will write and edit professional emails and business copy',   seller: 'Manuelle Ackun',    initials: 'MA', avatarColor: '#8B5CF6', category: 'Writing',     rating: 5.0, reviews: 7,  price: 6000,  deliveryDays: 1,  tags: ['Copywriting', 'Email', 'Business']             },
-  { id: 9,  title: 'I will create a pitch deck for your startup or business idea',  seller: 'Bonheur Munezero',  initials: 'BM', avatarColor: '#F59E0B', category: 'Design',      rating: 4.8, reviews: 11, price: 35000, deliveryDays: 4,  tags: ['PowerPoint', 'Pitch', 'Slides']                },
-  { id: 10, title: 'I will perform accurate data entry and spreadsheet management', seller: 'Gilbert Ntivunwa',  initials: 'GN', avatarColor: '#EF4444', category: 'Data',        rating: 4.7, reviews: 8,  price: 12000, deliveryDays: 2,  tags: ['Excel', 'Google Sheets', 'Data']               },
-  { id: 11, title: 'I will develop a REST API with Node.js and Express',             seller: 'David Achibiri',    initials: 'DA', avatarColor: '#10B981', category: 'Development', rating: 4.9, reviews: 10, price: 40000, deliveryDays: 5,  tags: ['Node.js', 'REST', 'Express']                   },
-  { id: 12, title: 'I will design and deliver custom UI components in Figma',       seller: 'Manuelle Ackun',    initials: 'MA', avatarColor: '#8B5CF6', category: 'Design',      rating: 5.0, reviews: 15, price: 18000, deliveryDays: 3,  tags: ['Figma', 'UI', 'Components']                    },
+  { id: 1,  title: 'I will build a full-stack web application with Next.js and Supabase',  seller: 'David Achibiri',   initials: 'DA', avatarColor: '#10B981', university: 'ALU Rwanda',   category: 'Development', price: 60000, deliveryDays: 7,  tags: ['React', 'Next.js', 'Supabase'],     cohortYear: 2025, featured: true },
+  { id: 2,  title: 'I will design a complete brand identity and logo for your startup',    seller: 'Manuelle Ackun',   initials: 'MA', avatarColor: '#8B5CF6', university: 'ALU Rwanda',   category: 'Design',      price: 20000, deliveryDays: 5,  tags: ['Figma', 'Branding', 'Logo'],         cohortYear: 2025 },
+  { id: 3,  title: 'I will translate 500 words between English, French and Kinyarwanda',  seller: 'Jean Nepo M.',     initials: 'JN', avatarColor: '#3B82F6', university: 'ALU Rwanda',   category: 'Writing',     price: 8000,  deliveryDays: 2,  tags: ['Translation', 'French', 'Kinyarwanda'], cohortYear: 2025 },
+  { id: 4,  title: 'I will set up your PostgreSQL database with full schema and seed data',seller: 'David Achibiri',   initials: 'DA', avatarColor: '#10B981', university: 'ALU Rwanda',   category: 'Development', price: 15000, deliveryDays: 3,  tags: ['PostgreSQL', 'SQL', 'Backend'],      cohortYear: 2025 },
+  { id: 5,  title: 'I will create and manage your social media content for one month',    seller: 'Bonheur M.',       initials: 'BM', avatarColor: '#F59E0B', university: 'ALU Rwanda',   category: 'Marketing',   price: 30000, deliveryDays: 30, tags: ['Instagram', 'Content', 'Strategy'],  cohortYear: 2025, featured: true },
+  { id: 6,  title: 'I will tutor you in mathematics, statistics or data analysis',        seller: 'Gilbert N.',       initials: 'GN', avatarColor: '#EF4444', university: 'ALU Rwanda',   category: 'Education',   price: 10000, deliveryDays: 1,  tags: ['Math', 'Statistics', 'Tutoring'],    cohortYear: 2025 },
+  { id: 7,  title: 'I will write and proofread your academic or business report',         seller: 'Jean Nepo M.',     initials: 'JN', avatarColor: '#3B82F6', university: 'ALU Rwanda',   category: 'Writing',     price: 12000, deliveryDays: 3,  tags: ['Copywriting', 'Editing', 'Reports'], cohortYear: 2025 },
+  { id: 8,  title: 'I will build a REST API with Node.js, Express and full documentation',seller: 'David Achibiri',   initials: 'DA', avatarColor: '#10B981', university: 'ALU Rwanda',   category: 'Development', price: 40000, deliveryDays: 5,  tags: ['Node.js', 'API', 'Express'],         cohortYear: 2025 },
+  { id: 9,  title: 'I will design pitch deck slides for your startup or product demo',    seller: 'Amara Diallo',     initials: 'AD', avatarColor: '#0EA5E9', university: 'CMU Africa',   category: 'Design',      price: 35000, deliveryDays: 4,  tags: ['PowerPoint', 'Figma', 'Pitch Deck'], cohortYear: 2024 },
+  { id: 10, title: 'I will perform accurate data entry and Excel spreadsheet management', seller: 'Kwame Asante',     initials: 'KA', avatarColor: '#D946EF', university: 'CMU Africa',   category: 'Data',        price: 12000, deliveryDays: 2,  tags: ['Excel', 'Data Entry', 'Sheets'],     cohortYear: 2024 },
+  { id: 11, title: 'I will edit and produce your short-form video content for social',    seller: 'Aline Uwase',      initials: 'AU', avatarColor: '#F43F5E', university: 'UR Huye',      category: 'Marketing',   price: 18000, deliveryDays: 3,  tags: ['Video', 'Editing', 'Reels'],         cohortYear: 2024 },
+  { id: 12, title: 'I will set up your mobile-responsive WordPress or Webflow site',      seller: 'Eric Mugisha',     initials: 'EM', avatarColor: '#14B8A6', university: 'UR Huye',      category: 'Development', price: 25000, deliveryDays: 5,  tags: ['WordPress', 'Webflow', 'CMS'],       cohortYear: 2023 },
+  { id: 13, title: 'I will produce a professional voiceover in English or French',        seller: 'Chloe Ndayishimiye',initials: 'CN', avatarColor: '#A855F7', university: 'ALU Rwanda',   category: 'Writing',     price: 9000,  deliveryDays: 2,  tags: ['Voiceover', 'French', 'Audio'],      cohortYear: 2024 },
+  { id: 14, title: 'I will do data analysis and create dashboards in Python or R',        seller: 'Luca Ntwari',      initials: 'LN', avatarColor: '#6366F1', university: 'CMU Africa',   category: 'Data',        price: 45000, deliveryDays: 6,  tags: ['Python', 'R', 'Dashboard'],          cohortYear: 2025 },
 ];
 
-const CATEGORIES = ['All', 'Development', 'Design', 'Writing', 'Marketing', 'Education', 'Data'];
-const SORT_OPTIONS = ['Most Popular', 'Newest', 'Price: Low to High', 'Price: High to Low', 'Top Rated'];
-const DELIVERY_OPTIONS = ['Any', 'Express (1 day)', 'Up to 3 days', 'Up to 7 days'];
+const CATEGORIES   = ['All', 'Development', 'Design', 'Writing', 'Marketing', 'Education', 'Data'];
+const UNIVERSITIES = ['All Universities', 'ALU Rwanda', 'CMU Africa', 'UR Huye'];
+const SORT_OPTIONS = ['Newest', 'Price: Low to High', 'Price: High to Low', 'Delivery: Fastest'];
+
+// ─── Cohort helpers ───────────────────────────────────────────────────────────
+
+function getAccessStatus(cohortYear: number): 'active' | 'expiring' | 'expired' {
+  const yearsIn = CURRENT_YEAR - cohortYear;
+  if (yearsIn >= 2) return 'expired';
+  if (yearsIn === 1) return 'expiring';
+  return 'active';
+}
+
+function getCohortLabel(cohortYear: number): string {
+  return `Class of ${cohortYear}`;
+}
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -52,11 +70,6 @@ const Icon = {
   Search: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
       <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-    </svg>
-  ),
-  Star: () => (
-    <svg viewBox="0 0 24 24" fill="#F97316" width={12} height={12}>
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
   ),
   Clock: () => (
@@ -80,168 +93,220 @@ const Icon = {
     </svg>
   ),
   Verified: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={12} height={12}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
       <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
     </svg>
   ),
   Grid: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
       <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
     </svg>
   ),
   List: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
       <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
     </svg>
   ),
 };
 
-// ─── Gig Card ─────────────────────────────────────────────────────────────────
+// ─── Access Badge ─────────────────────────────────────────────────────────────
 
-function GigCard({ gig, listView }: { gig: Gig; listView: boolean }) {
-  if (listView) {
-    return (
-      <Link href={`/gigs/${gig.id}`} style={s.gigCardList}>
-        <div style={s.gigListThumb}>
-          <span style={{ ...s.gigThumbLabel, fontSize: '0.6rem' }}>{gig.category}</span>
-          {gig.featured && <span style={s.featuredDot} />}
-        </div>
-        <div style={s.gigListBody}>
-          <div style={s.gigListTop}>
-            <div style={s.sellerRow}>
-              <div style={{ ...s.sellerAvatar, background: gig.avatarColor }}>{gig.initials}</div>
-              <span style={s.sellerName}>{gig.seller}</span>
-              <Icon.Verified />
-            </div>
-            <p style={s.gigListTitle}>{gig.title}</p>
-            <div style={s.gigTagsRow}>
-              {gig.tags.map(tag => <span key={tag} style={s.tag}>{tag}</span>)}
-            </div>
-          </div>
-          <div style={s.gigListMeta}>
-            <div style={s.ratingRow}>
-              <Icon.Star />
-              <span style={s.ratingNum}>{gig.rating.toFixed(1)}</span>
-              <span style={s.ratingCount}>({gig.reviews})</span>
-            </div>
-            <div style={s.deliveryRow}>
-              <Icon.Clock />
-              <span>{gig.deliveryDays}d delivery</span>
-            </div>
-          </div>
-        </div>
-        <div style={s.gigListPrice}>
-          <span style={s.priceFrom}>Starting at</span>
-          <span style={s.priceVal}>{gig.price.toLocaleString()} RWF</span>
-          <button style={s.bookBtnSm} onClick={e => e.preventDefault()}>Book</button>
-        </div>
-      </Link>
-    );
-  }
+function AccessBadge({ cohortYear }: { cohortYear: number }) {
+  const status = getAccessStatus(cohortYear);
+  const label  = getCohortLabel(cohortYear);
+
+  const styles: Record<string, React.CSSProperties> = {
+    active:   { background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#16A34A' },
+    expiring: { background: '#FFFBEB', border: '1px solid #FDE68A', color: '#D97706' },
+    expired:  { background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626' },
+  };
+
+  const labels: Record<string, string> = {
+    active:   `${label} · Active`,
+    expiring: `${label} · Last year`,
+    expired:  `${label} · Expired`,
+  };
 
   return (
-    <Link href={`/gigs/${gig.id}`} style={s.gigCard}>
-      {/* Thumbnail */}
+    <span style={{ ...s.accessBadge, ...styles[status] }}>
+      {labels[status]}
+    </span>
+  );
+}
+
+// ─── Gig Card (grid) ──────────────────────────────────────────────────────────
+
+function GigCard({ gig }: { gig: Gig }) {
+  const [saved, setSaved] = useState(false);
+  const status = getAccessStatus(gig.cohortYear);
+
+  return (
+    <div style={{ ...s.gigCard, ...(status === 'expired' ? s.gigCardExpired : {}) }}>
+
+      {/* Thumb */}
       <div style={s.gigThumb}>
-        <span style={s.gigThumbLabel}>{gig.category}</span>
-        {gig.featured && (
-          <span style={s.featuredBadge}>Featured</span>
+        {gig.featured && status !== 'expired' && (
+          <div style={s.featuredBadge}>Featured</div>
         )}
+        {status === 'expired' && (
+          <div style={s.expiredOverlay}>
+            <span style={s.expiredLabel}>Access Ended</span>
+          </div>
+        )}
+        <button
+          style={{ ...s.saveBtn, ...(saved ? s.saveBtnActive : {}) }}
+          onClick={() => setSaved(v => !v)}
+          aria-label="Save gig"
+        >
+          <svg viewBox="0 0 24 24" fill={saved ? '#F97316' : 'none'} stroke={saved ? '#F97316' : 'white'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
+            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+          </svg>
+        </button>
+        <span style={s.gigThumbCat}>{gig.category}</span>
       </div>
 
-      {/* Seller */}
+      {/* Body */}
       <div style={s.gigBody}>
+        {/* Seller row */}
         <div style={s.sellerRow}>
           <div style={{ ...s.sellerAvatar, background: gig.avatarColor }}>{gig.initials}</div>
-          <span style={s.sellerName}>{gig.seller}</span>
-          <Icon.Verified />
+          <div style={s.sellerInfo}>
+            <span style={s.sellerName}>{gig.seller}</span>
+            <span style={s.sellerUni}>{gig.university}</span>
+          </div>
+          <div style={s.verifiedBadge}>
+            <Icon.Verified />
+            <span>Verified</span>
+          </div>
         </div>
 
         <p style={s.gigTitle}>{gig.title}</p>
 
-        <div style={s.gigTagsRow}>
-          {gig.tags.slice(0, 2).map(tag => <span key={tag} style={s.tag}>{tag}</span>)}
+        {/* Tags */}
+        <div style={s.gigTags}>
+          {gig.tags.slice(0, 3).map(tag => (
+            <span key={tag} style={s.gigTag}>{tag}</span>
+          ))}
         </div>
       </div>
 
       {/* Footer */}
       <div style={s.gigFooter}>
         <div style={s.gigFooterLeft}>
-          <div style={s.ratingRow}>
-            <Icon.Star />
-            <span style={s.ratingNum}>{gig.rating.toFixed(1)}</span>
-            <span style={s.ratingCount}>({gig.reviews})</span>
-          </div>
-          <div style={s.deliveryRow}>
+          {/* Cohort access badge replaces rating */}
+          <AccessBadge cohortYear={gig.cohortYear} />
+          <div style={s.gigDelivery}>
             <Icon.Clock />
             <span>{gig.deliveryDays}d delivery</span>
           </div>
         </div>
-        <div>
-          <span style={s.priceFrom}>From</span>
-          <span style={s.priceVal}>{gig.price.toLocaleString()} RWF</span>
+        <div style={s.gigPriceWrap}>
+          <span style={s.gigPriceFrom}>From</span>
+          <span style={s.gigPrice}>{gig.price.toLocaleString()} RWF</span>
         </div>
       </div>
-    </Link>
+    </div>
+  );
+}
+
+// ─── Gig Row (list view) ──────────────────────────────────────────────────────
+
+function GigRow({ gig }: { gig: Gig }) {
+  const status = getAccessStatus(gig.cohortYear);
+  return (
+    <div style={{ ...s.gigRow, ...(status === 'expired' ? { opacity: 0.55 } : {}) }}>
+      <div style={s.gigRowThumb}>
+        <span style={s.gigThumbCat}>{gig.category}</span>
+      </div>
+      <div style={s.gigRowBody}>
+        <div style={s.sellerRow}>
+          <div style={{ ...s.sellerAvatar, background: gig.avatarColor }}>{gig.initials}</div>
+          <span style={s.sellerName}>{gig.seller}</span>
+          <span style={s.sellerUniInline}>{gig.university}</span>
+          <div style={s.verifiedBadge}>
+            <Icon.Verified />
+            <span>Verified</span>
+          </div>
+        </div>
+        <p style={s.gigRowTitle}>{gig.title}</p>
+        <div style={s.gigRowMeta}>
+          <AccessBadge cohortYear={gig.cohortYear} />
+          <div style={s.gigDelivery}>
+            <Icon.Clock />
+            <span>{gig.deliveryDays}d delivery</span>
+          </div>
+          <div style={s.gigTags}>
+            {gig.tags.map(tag => <span key={tag} style={s.gigTag}>{tag}</span>)}
+          </div>
+        </div>
+      </div>
+      <div style={s.gigRowPrice}>
+        <span style={s.gigPriceFrom}>From</span>
+        <span style={s.gigPrice}>{gig.price.toLocaleString()} RWF</span>
+        {status !== 'expired' && <button style={s.bookBtn}>Book</button>}
+      </div>
+    </div>
   );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function MarketplacePage() {
-  const [search, setSearch] = useState('');
+export default function Marketplace() {
+  const [search, setSearch]               = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('Most Popular');
-  const [sortOpen, setSortOpen] = useState(false);
-  const [delivery, setDelivery] = useState('Any');
-  const [maxPrice, setMaxPrice] = useState(100000);
-  const [minRating, setMinRating] = useState(0);
-  const [listView, setListView] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-
-  // Active filters for the chip row
-  const activeFilters: { label: string; clear: () => void }[] = [];
-  if (activeCategory !== 'All') activeFilters.push({ label: activeCategory, clear: () => setActiveCategory('All') });
-  if (delivery !== 'Any') activeFilters.push({ label: delivery, clear: () => setDelivery('Any') });
-  if (maxPrice < 100000) activeFilters.push({ label: `Max ${maxPrice.toLocaleString()} RWF`, clear: () => setMaxPrice(100000) });
-  if (minRating > 0) activeFilters.push({ label: `${minRating}+ stars`, clear: () => setMinRating(0) });
+  const [activeUniversity, setActiveUniversity] = useState('All Universities');
+  const [sortBy, setSortBy]               = useState('Newest');
+  const [sortOpen, setSortOpen]           = useState(false);
+  const [priceRange, setPriceRange]       = useState<[number, number]>([0, 100000]);
+  const [maxDelivery, setMaxDelivery]     = useState(30);
+  const [listView, setListView]           = useState(false);
+  const [profileOpen, setProfileOpen]     = useState(false);
+  const [showExpired, setShowExpired]     = useState(false);
 
   const filtered = useMemo(() => {
     let list = [...ALL_GIGS];
 
+    if (!showExpired) list = list.filter(g => getAccessStatus(g.cohortYear) !== 'expired');
+    if (activeCategory !== 'All') list = list.filter(g => g.category === activeCategory);
+    if (activeUniversity !== 'All Universities') list = list.filter(g => g.university === activeUniversity);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(g =>
         g.title.toLowerCase().includes(q) ||
         g.seller.toLowerCase().includes(q) ||
-        g.tags.some(t => t.toLowerCase().includes(q))
+        g.tags.some(t => t.toLowerCase().includes(q)) ||
+        g.university.toLowerCase().includes(q)
       );
     }
-
-    if (activeCategory !== 'All') list = list.filter(g => g.category === activeCategory);
-
-    if (delivery === 'Express (1 day)') list = list.filter(g => g.deliveryDays <= 1);
-    else if (delivery === 'Up to 3 days') list = list.filter(g => g.deliveryDays <= 3);
-    else if (delivery === 'Up to 7 days') list = list.filter(g => g.deliveryDays <= 7);
-
-    list = list.filter(g => g.price <= maxPrice);
-    list = list.filter(g => g.rating >= minRating);
+    list = list.filter(g => g.price >= priceRange[0] && g.price <= priceRange[1]);
+    list = list.filter(g => g.deliveryDays <= maxDelivery);
 
     switch (sortBy) {
-      case 'Price: Low to High': list.sort((a, b) => a.price - b.price); break;
-      case 'Price: High to Low': list.sort((a, b) => b.price - a.price); break;
-      case 'Top Rated': list.sort((a, b) => b.rating - a.rating); break;
-      case 'Newest': list.sort((a, b) => b.id - a.id); break;
-      default: list.sort((a, b) => b.reviews - a.reviews);
+      case 'Price: Low to High':  list.sort((a, b) => a.price - b.price); break;
+      case 'Price: High to Low':  list.sort((a, b) => b.price - a.price); break;
+      case 'Delivery: Fastest':   list.sort((a, b) => a.deliveryDays - b.deliveryDays); break;
+      default:                    list.sort((a, b) => b.id - a.id);
     }
 
     return list;
-  }, [search, activeCategory, sortBy, delivery, maxPrice, minRating]);
+  }, [search, activeCategory, activeUniversity, sortBy, priceRange, maxDelivery, showExpired]);
+
+  const resetAll = () => {
+    setSearch(''); setActiveCategory('All'); setActiveUniversity('All Universities');
+    setPriceRange([0, 100000]); setMaxDelivery(30); setShowExpired(false);
+  };
+
+  const activeFilters: { label: string; clear: () => void }[] = [];
+  if (activeCategory !== 'All')             activeFilters.push({ label: activeCategory,     clear: () => setActiveCategory('All') });
+  if (activeUniversity !== 'All Universities') activeFilters.push({ label: activeUniversity, clear: () => setActiveUniversity('All Universities') });
+  if (priceRange[1] < 100000)               activeFilters.push({ label: `Max ${priceRange[1].toLocaleString()} RWF`, clear: () => setPriceRange([0, 100000]) });
+  if (maxDelivery < 30)                     activeFilters.push({ label: `${maxDelivery}d delivery`, clear: () => setMaxDelivery(30) });
+  if (showExpired)                          activeFilters.push({ label: 'Including expired',  clear: () => setShowExpired(false) });
 
   return (
-    <div style={s.root}>
+    <div style={s.pageWrapper}>
 
-      {/* ── NAV ───────────────────────────────────────────────── */}
+      {/* ── NAV ──────────────────────────────────────────────────── */}
       <nav style={s.nav}>
         <div style={s.navInner}>
           <Link href="/" style={s.logo}>
@@ -249,21 +314,25 @@ export default function MarketplacePage() {
             <span style={s.logoText}>UniHustle</span>
           </Link>
 
-          {/* Global search in nav */}
           <div style={s.navSearch}>
             <span style={s.navSearchIcon}><Icon.Search /></span>
             <input
               style={s.navSearchInput}
               type="text"
-              placeholder="Search for any service or skill..."
+              placeholder="Search for any service, skill, or university..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+            {search && (
+              <button style={s.navSearchClear} onClick={() => setSearch('')}>
+                <Icon.X />
+              </button>
+            )}
           </div>
 
           <div style={s.navRight}>
-            <Link href="/dashboard" style={s.navLink}>Dashboard</Link>
-            <Link href="/auth" style={s.navLinkPrimary}>Sign Up Free</Link>
+            <Link href="/auth" style={s.navLoginBtn}>Log In</Link>
+            <Link href="/auth" style={s.navSignupBtn}>Sign Up Free</Link>
             <div style={{ position: 'relative' }}>
               <button style={s.avatar} onClick={() => setProfileOpen(v => !v)}>DA</button>
               {profileOpen && (
@@ -272,7 +341,7 @@ export default function MarketplacePage() {
                     <div style={{ ...s.profileAvatar, background: '#10B981' }}>DA</div>
                     <div>
                       <div style={s.profileName}>David Achibiri</div>
-                      <div style={s.profileSub}>Student · Seller</div>
+                      <div style={s.profileSub}>ALU Rwanda · Class of 2025</div>
                     </div>
                   </div>
                   <div style={s.menuDivider} />
@@ -286,211 +355,222 @@ export default function MarketplacePage() {
             </div>
           </div>
         </div>
+
+        {/* Category tabs */}
+        <div style={s.catBar}>
+          <div style={s.catBarInner}>
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                style={{ ...s.catTab, ...(activeCategory === cat ? s.catTabActive : {}) }}
+                onClick={() => setActiveCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
       </nav>
 
-      {/* ── CATEGORY TABS ─────────────────────────────────────── */}
-      <div style={s.catBar}>
-        <div style={s.catBarInner}>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              style={{
-                ...s.catTab,
-                ...(activeCategory === cat ? s.catTabActive : {}),
-              }}
-              onClick={() => setActiveCategory(cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── BODY ──────────────────────────────────────────────── */}
+      {/* ── BODY ─────────────────────────────────────────────────── */}
       <div style={s.body}>
-        <div style={s.bodyInner}>
 
-          {/* ── SIDEBAR ─────────────────────────────────────── */}
-          <aside style={s.sidebar}>
-            <div style={s.sidebarBlock}>
-              <p style={s.sidebarLabel}>Delivery Time</p>
-              <div style={s.radioGroup}>
-                {DELIVERY_OPTIONS.map(opt => (
-                  <label key={opt} style={s.radioRow}>
-                    <input
-                      type="radio"
-                      name="delivery"
-                      checked={delivery === opt}
-                      onChange={() => setDelivery(opt)}
-                      style={{ accentColor: '#F97316' }}
-                    />
-                    <span style={s.radioText}>{opt}</span>
-                  </label>
-                ))}
+        {/* ── SIDEBAR ────────────────────────────────────────────── */}
+        <aside style={s.sidebar}>
+          <p style={s.sidebarHeading}>Filters</p>
+
+          {/* University filter */}
+          <div style={s.filterBlock}>
+            <p style={s.filterLabel}>University</p>
+            <div style={s.radioGroup}>
+              {UNIVERSITIES.map(uni => (
+                <label key={uni} style={s.radioRow}>
+                  <input
+                    type="radio"
+                    name="university"
+                    checked={activeUniversity === uni}
+                    onChange={() => setActiveUniversity(uni)}
+                    style={{ accentColor: '#F97316' }}
+                  />
+                  <span style={s.radioText}>{uni}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div style={s.filterDivider} />
+
+          {/* Budget */}
+          <div style={s.filterBlock}>
+            <p style={s.filterLabel}>Budget (RWF)</p>
+            <div style={s.priceInputs}>
+              <input
+                type="number"
+                style={s.priceInput}
+                placeholder="Min"
+                value={priceRange[0] || ''}
+                onChange={e => setPriceRange([Number(e.target.value) || 0, priceRange[1]])}
+              />
+              <span style={s.priceSep}>—</span>
+              <input
+                type="number"
+                style={s.priceInput}
+                placeholder="Max"
+                value={priceRange[1] === 100000 ? '' : priceRange[1]}
+                onChange={e => setPriceRange([priceRange[0], Number(e.target.value) || 100000])}
+              />
+            </div>
+            <div style={s.pricePresets}>
+              {([[0,15000],[15000,30000],[30000,60000]] as [number,number][]).map(([min, max]) => (
+                <button
+                  key={`${min}-${max}`}
+                  style={{ ...s.presetBtn, ...(priceRange[0] === min && priceRange[1] === max ? s.presetBtnActive : {}) }}
+                  onClick={() => setPriceRange([min, max])}
+                >
+                  {min === 0 ? `< ${max/1000}k` : `${min/1000}k–${max/1000}k`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={s.filterDivider} />
+
+          {/* Delivery time */}
+          <div style={s.filterBlock}>
+            <p style={s.filterLabel}>Delivery Time</p>
+            <div style={s.deliveryBtns}>
+              {[1, 3, 7, 30].map(d => (
+                <button
+                  key={d}
+                  style={{ ...s.deliveryBtn, ...(maxDelivery === d ? s.deliveryBtnActive : {}) }}
+                  onClick={() => setMaxDelivery(d)}
+                >
+                  {d === 1 ? '24 hrs' : d === 30 ? 'Any' : `${d} days`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={s.filterDivider} />
+
+          {/* Cohort access toggle */}
+          <div style={s.filterBlock}>
+            <p style={s.filterLabel}>Cohort Access</p>
+            <label style={s.toggleRow}>
+              <div
+                style={{ ...s.toggleTrack, ...(showExpired ? s.toggleTrackOn : {}) }}
+                onClick={() => setShowExpired(v => !v)}
+              >
+                <div style={{ ...s.toggleThumb, ...(showExpired ? s.toggleThumbOn : {}) }} />
               </div>
+              <span style={s.toggleLabel}>Show expired cohorts</span>
+            </label>
+            <p style={s.cohortNote}>
+              Each student has platform access for 2 years from their cohort year. Expired profiles are read-only.
+            </p>
+          </div>
+
+          <div style={s.filterDivider} />
+
+          <button style={s.resetBtn} onClick={resetAll}>Reset all filters</button>
+        </aside>
+
+        {/* ── RESULTS ────────────────────────────────────────────── */}
+        <main style={s.results}>
+
+          {/* Results bar */}
+          <div style={s.resultsBar}>
+            <div>
+              <p style={s.resultsCount}>
+                <strong>{filtered.length}</strong> gig{filtered.length !== 1 ? 's' : ''} available
+                {activeCategory !== 'All' && <span style={s.resultsCat}> in {activeCategory}</span>}
+                {activeUniversity !== 'All Universities' && <span style={s.resultsCat}> from {activeUniversity}</span>}
+              </p>
+              {search && <p style={s.resultsSearch}>Results for &ldquo;{search}&rdquo;</p>}
             </div>
 
-            <div style={s.sidebarDivider} />
-
-            <div style={s.sidebarBlock}>
-              <p style={s.sidebarLabel}>Max Price</p>
-              <div style={s.rangeWrap}>
-                <input
-                  type="range"
-                  min={5000}
-                  max={100000}
-                  step={5000}
-                  value={maxPrice}
-                  onChange={e => setMaxPrice(Number(e.target.value))}
-                  style={s.rangeInput}
-                />
-                <div style={s.rangeValues}>
-                  <span style={s.rangeMin}>5,000 RWF</span>
-                  <span style={s.rangeMax}>{maxPrice.toLocaleString()} RWF</span>
-                </div>
-              </div>
-            </div>
-
-            <div style={s.sidebarDivider} />
-
-            <div style={s.sidebarBlock}>
-              <p style={s.sidebarLabel}>Minimum Rating</p>
-              <div style={s.radioGroup}>
-                {[0, 4, 4.5, 4.8].map(r => (
-                  <label key={r} style={s.radioRow}>
-                    <input
-                      type="radio"
-                      name="rating"
-                      checked={minRating === r}
-                      onChange={() => setMinRating(r)}
-                      style={{ accentColor: '#F97316' }}
-                    />
-                    <span style={s.radioText}>
-                      {r === 0 ? 'Any rating' : `${r}+ stars`}
+            <div style={s.resultsBarRight}>
+              {/* Active filter chips */}
+              {activeFilters.length > 0 && (
+                <div style={s.filterChips}>
+                  {activeFilters.map(f => (
+                    <span key={f.label} style={s.filterChip}>
+                      {f.label}
+                      <button style={s.chipX} onClick={f.clear}><Icon.X /></button>
                     </span>
-                  </label>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              )}
 
-            <div style={s.sidebarDivider} />
-
-            <button
-              style={s.clearFiltersBtn}
-              onClick={() => {
-                setActiveCategory('All');
-                setDelivery('Any');
-                setMaxPrice(100000);
-                setMinRating(0);
-                setSearch('');
-              }}
-            >
-              Clear all filters
-            </button>
-          </aside>
-
-          {/* ── RESULTS ─────────────────────────────────────── */}
-          <div style={s.results}>
-
-            {/* Results toolbar */}
-            <div style={s.toolbar}>
-              <div style={s.toolbarLeft}>
-                <span style={s.resultsCount}>
-                  <strong>{filtered.length}</strong> gig{filtered.length !== 1 ? 's' : ''} found
-                  {activeCategory !== 'All' && <span style={{ color: '#A8A29E' }}> in {activeCategory}</span>}
-                </span>
-
-                {/* Active filter chips */}
-                {activeFilters.length > 0 && (
-                  <div style={s.filterChips}>
-                    {activeFilters.map(f => (
-                      <span key={f.label} style={s.filterChip}>
-                        {f.label}
-                        <button style={s.chipX} onClick={f.clear}><Icon.X /></button>
-                      </span>
+              {/* Sort */}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <button style={s.sortBtn} onClick={() => setSortOpen(v => !v)}>
+                  <Icon.Filter />
+                  {sortBy}
+                  <Icon.ChevronDown />
+                </button>
+                {sortOpen && (
+                  <div style={s.sortMenu}>
+                    {SORT_OPTIONS.map(opt => (
+                      <button
+                        key={opt}
+                        style={{ ...s.sortOption, ...(sortBy === opt ? s.sortOptionActive : {}) }}
+                        onClick={() => { setSortBy(opt); setSortOpen(false); }}
+                      >
+                        {opt}
+                      </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div style={s.toolbarRight}>
-                {/* Sort */}
-                <div style={{ position: 'relative' }}>
-                  <button style={s.sortBtn} onClick={() => setSortOpen(v => !v)}>
-                    <Icon.Filter />
-                    {sortBy}
-                    <Icon.ChevronDown />
-                  </button>
-                  {sortOpen && (
-                    <div style={s.sortMenu}>
-                      {SORT_OPTIONS.map(opt => (
-                        <button
-                          key={opt}
-                          style={{
-                            ...s.sortItem,
-                            ...(sortBy === opt ? { color: '#F97316', fontWeight: 700 } : {}),
-                          }}
-                          onClick={() => { setSortBy(opt); setSortOpen(false); }}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* View toggle */}
-                <div style={s.viewToggle}>
-                  <button
-                    style={{ ...s.viewBtn, ...(listView ? {} : s.viewBtnActive) }}
-                    onClick={() => setListView(false)}
-                    aria-label="Grid view"
-                  >
-                    <Icon.Grid />
-                  </button>
-                  <button
-                    style={{ ...s.viewBtn, ...(listView ? s.viewBtnActive : {}) }}
-                    onClick={() => setListView(true)}
-                    aria-label="List view"
-                  >
-                    <Icon.List />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Gig grid / list */}
-            {filtered.length === 0 ? (
-              <div style={s.emptyState}>
-                <div style={s.emptyIcon}>
-                  <Icon.Search />
-                </div>
-                <p style={s.emptyTitle}>No gigs found</p>
-                <p style={s.emptySub}>Try adjusting your filters or search query.</p>
-                <button
-                  style={s.emptyBtn}
-                  onClick={() => {
-                    setSearch('');
-                    setActiveCategory('All');
-                    setDelivery('Any');
-                    setMaxPrice(100000);
-                    setMinRating(0);
-                  }}
-                >
-                  Clear all filters
+              {/* View toggle */}
+              <div style={s.viewToggle}>
+                <button style={{ ...s.viewBtn, ...(!listView ? s.viewBtnActive : {}) }} onClick={() => setListView(false)} aria-label="Grid view">
+                  <Icon.Grid />
+                </button>
+                <button style={{ ...s.viewBtn, ...(listView ? s.viewBtnActive : {}) }} onClick={() => setListView(true)} aria-label="List view">
+                  <Icon.List />
                 </button>
               </div>
-            ) : listView ? (
+            </div>
+          </div>
+
+          {/* University quick-filter pills (above grid) */}
+          <div style={s.uniPills}>
+            {UNIVERSITIES.map(uni => (
+              <button
+                key={uni}
+                style={{ ...s.uniPill, ...(activeUniversity === uni ? s.uniPillActive : {}) }}
+                onClick={() => setActiveUniversity(uni)}
+              >
+                {uni}
+              </button>
+            ))}
+          </div>
+
+          {/* Grid or list */}
+          {filtered.length > 0 ? (
+            listView ? (
               <div style={s.listWrap}>
-                {filtered.map(gig => <GigCard key={gig.id} gig={gig} listView />)}
+                {filtered.map(gig => <GigRow key={gig.id} gig={gig} />)}
               </div>
             ) : (
-              <div style={s.grid}>
-                {filtered.map(gig => <GigCard key={gig.id} gig={gig} listView={false} />)}
+              <div style={s.gigsGrid}>
+                {filtered.map(gig => <GigCard key={gig.id} gig={gig} />)}
               </div>
-            )}
-          </div>
-        </div>
+            )
+          ) : (
+            <div style={s.emptyState}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={44} height={44}>
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              </svg>
+              <p style={s.emptyTitle}>No gigs found</p>
+              <p style={s.emptySub}>Try adjusting your filters or search query</p>
+              <button style={s.emptyClear} onClick={resetAll}>Clear all filters</button>
+            </div>
+          )}
+        </main>
       </div>
 
       <style>{`
@@ -499,16 +579,16 @@ export default function MarketplacePage() {
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F5F5F4; }
         a { text-decoration: none; color: inherit; }
         button { font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; }
-        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: #E7E5E4; border-radius: 99px; outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #F97316; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+        input { font-family: 'Plus Jakarta Sans', sans-serif; }
+        input:focus { outline: none; box-shadow: 0 0 0 3px rgba(249,115,22,0.1); border-color: #F97316 !important; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
         @media (max-width: 1024px) { .sidebar { display: none !important; } }
         @media (max-width: 768px) {
-          .nav-search { display: none !important; }
-          .grid { grid-template-columns: 1fr 1fr !important; }
+          .gigs-grid { grid-template-columns: repeat(2,1fr) !important; }
+          .nav-right { display: none !important; }
         }
         @media (max-width: 480px) {
-          .grid { grid-template-columns: 1fr !important; }
-          .nav-link-primary { display: none !important; }
+          .gigs-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>
@@ -518,7 +598,7 @@ export default function MarketplacePage() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s: Record<string, React.CSSProperties> = {
-  root: {
+  pageWrapper: {
     minHeight: '100vh',
     background: '#F5F5F4',
     fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -527,301 +607,133 @@ const s: Record<string, React.CSSProperties> = {
   },
 
   // NAV
-  nav: {
-    position: 'sticky', top: 0, zIndex: 100,
-    background: 'white', borderBottom: '1px solid #E7E5E4',
-  },
-  navInner: {
-    maxWidth: 1280, margin: '0 auto', padding: '0 28px',
-    height: 60, display: 'flex', alignItems: 'center',
-    justifyContent: 'space-between', gap: 16,
-  },
-  logo: { display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 },
+  nav: { position: 'sticky', top: 0, zIndex: 100, background: 'white', borderBottom: '1px solid #E7E5E4' },
+  navInner: { maxWidth: 1200, margin: '0 auto', padding: '0 28px', height: 60, display: 'flex', alignItems: 'center', gap: 16 },
+  logo: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, textDecoration: 'none' },
   logoMark: { width: 28, height: 28, background: '#F97316', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   logoText: { fontWeight: 800, fontSize: '0.95rem', color: '#0C0A09', letterSpacing: '-0.02em' },
-  navSearch: {
-    flex: 1, maxWidth: 480, position: 'relative',
-  },
-  navSearchIcon: {
-    position: 'absolute', left: 13, top: '50%',
-    transform: 'translateY(-50%)', color: '#A8A29E',
-    display: 'flex', alignItems: 'center', pointerEvents: 'none',
-  },
-  navSearchInput: {
-    width: '100%', padding: '8px 14px 8px 38px',
-    border: '1px solid #E7E5E4', borderRadius: 9,
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
-    fontSize: '0.85rem', color: '#0C0A09', background: '#FAFAFA',
-    outline: 'none',
-  },
-  navRight: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 },
-  navLink: { padding: '6px 12px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, color: '#44403C', textDecoration: 'none' },
-  navLinkPrimary: {
-    padding: '7px 16px', borderRadius: 8,
-    fontSize: '0.82rem', fontWeight: 700, color: 'white',
-    background: '#F97316', textDecoration: 'none',
-  },
-  avatar: {
-    width: 32, height: 32, borderRadius: 999,
-    background: '#0C0A09', color: 'white',
-    border: 'none', fontSize: '0.62rem', fontWeight: 800,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', marginLeft: 4, letterSpacing: '0.02em',
-  },
-
-  // Profile menu
-  profileMenu: {
-    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-    background: 'white', borderRadius: 12,
-    boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
-    border: '1px solid #E7E5E4', minWidth: 200,
-    padding: '6px 0', zIndex: 200,
-  },
+  navSearch: { flex: 1, maxWidth: 540, position: 'relative', display: 'flex', alignItems: 'center' },
+  navSearchIcon: { position: 'absolute', left: 13, color: '#A8A29E', display: 'flex', alignItems: 'center', pointerEvents: 'none' },
+  navSearchInput: { width: '100%', padding: '9px 36px 9px 40px', border: '1.5px solid #E7E5E4', borderRadius: 9, fontSize: '0.85rem', color: '#0C0A09', background: 'white', outline: 'none' },
+  navSearchClear: { position: 'absolute', right: 12, background: 'none', border: 'none', color: '#A8A29E', display: 'flex', alignItems: 'center', padding: 2 },
+  navRight: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 },
+  navLoginBtn: { padding: '7px 16px', borderRadius: 8, border: '1.5px solid #E7E5E4', background: 'white', fontSize: '0.82rem', fontWeight: 600, color: '#44403C' },
+  navSignupBtn: { padding: '7px 16px', borderRadius: 8, background: '#F97316', color: 'white', border: 'none', fontSize: '0.82rem', fontWeight: 700 },
+  avatar: { width: 32, height: 32, borderRadius: 999, background: '#0C0A09', color: 'white', border: 'none', fontSize: '0.62rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginLeft: 4 },
+  profileMenu: { position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.10)', border: '1px solid #E7E5E4', minWidth: 210, padding: '6px 0', zIndex: 200 },
   profileHead: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px' },
-  profileAvatar: {
-    width: 32, height: 32, borderRadius: 999, color: 'white',
-    fontSize: '0.62rem', fontWeight: 800,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
+  profileAvatar: { width: 32, height: 32, borderRadius: 999, color: 'white', fontSize: '0.62rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   profileName: { fontWeight: 700, fontSize: '0.85rem', color: '#0C0A09' },
   profileSub: { fontSize: '0.72rem', color: '#A8A29E', marginTop: 1 },
   menuDivider: { height: 1, background: '#F5F5F4', margin: '4px 0' },
-  menuItem: {
-    display: 'block', width: '100%', padding: '8px 14px',
-    background: 'none', border: 'none',
-    fontSize: '0.82rem', fontWeight: 500, color: '#1C1917',
-    textAlign: 'left' as const, cursor: 'pointer',
-  },
+  menuItem: { display: 'block', width: '100%', padding: '8px 14px', background: 'none', border: 'none', fontSize: '0.82rem', fontWeight: 500, color: '#1C1917', textAlign: 'left' as const, cursor: 'pointer' },
 
-  // CATEGORY BAR
-  catBar: { background: 'white', borderBottom: '1px solid #E7E5E4' },
-  catBarInner: {
-    maxWidth: 1280, margin: '0 auto', padding: '0 28px',
-    display: 'flex', gap: 0, overflowX: 'auto' as const,
-  },
-  catTab: {
-    padding: '13px 18px', background: 'none', border: 'none',
-    fontSize: '0.83rem', fontWeight: 600, color: '#78716C',
-    cursor: 'pointer', whiteSpace: 'nowrap' as const,
-    borderBottom: '2px solid transparent', transition: 'color 0.15s, border-color 0.15s',
-  },
+  // Category bar
+  catBar: { borderTop: '1px solid #F5F5F4', overflow: 'hidden' },
+  catBarInner: { maxWidth: 1200, margin: '0 auto', padding: '0 28px', display: 'flex', gap: 0, overflowX: 'auto' as const, scrollbarWidth: 'none' as const },
+  catTab: { padding: '10px 18px', background: 'none', border: 'none', fontSize: '0.82rem', fontWeight: 600, color: '#78716C', whiteSpace: 'nowrap' as const, borderBottom: '2px solid transparent' },
   catTabActive: { color: '#0C0A09', borderBottom: '2px solid #F97316' },
 
-  // BODY LAYOUT
-  body: { maxWidth: 1280, margin: '0 auto', padding: '28px 28px 80px' },
-  bodyInner: { display: 'flex', gap: 28, alignItems: 'flex-start' },
+  // Body
+  body: { maxWidth: 1200, margin: '0 auto', padding: '28px 28px 80px', display: 'flex', gap: 28, alignItems: 'flex-start' },
 
-  // SIDEBAR
-  sidebar: {
-    width: 220, flexShrink: 0,
-    background: 'white', border: '1px solid #E7E5E4',
-    borderRadius: 12, padding: '20px',
-    position: 'sticky', top: 120,
-  },
-  sidebarBlock: { paddingBottom: 4 },
-  sidebarLabel: {
-    fontSize: '0.72rem', fontWeight: 700, color: '#A8A29E',
-    textTransform: 'uppercase' as const, letterSpacing: '0.07em',
-    marginBottom: 12,
-  },
+  // Sidebar
+  sidebar: { width: 230, flexShrink: 0, position: 'sticky', top: 112, background: 'white', border: '1px solid #E7E5E4', borderRadius: 12, padding: '20px' },
+  sidebarHeading: { fontSize: '0.72rem', fontWeight: 700, color: '#A8A29E', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 18 },
+  filterBlock: { marginBottom: 4 },
+  filterLabel: { fontSize: '0.8rem', fontWeight: 700, color: '#0C0A09', marginBottom: 10 },
+  filterDivider: { height: 1, background: '#F5F5F4', margin: '16px 0' },
   radioGroup: { display: 'flex', flexDirection: 'column' as const, gap: 9 },
   radioRow: { display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' },
   radioText: { fontSize: '0.82rem', fontWeight: 500, color: '#44403C' },
-  sidebarDivider: { height: 1, background: '#F5F5F4', margin: '16px 0' },
-  rangeWrap: {},
-  rangeInput: { width: '100%', marginBottom: 10 },
-  rangeValues: { display: 'flex', justifyContent: 'space-between' },
-  rangeMin: { fontSize: '0.72rem', color: '#A8A29E' },
-  rangeMax: { fontSize: '0.72rem', color: '#0C0A09', fontWeight: 700 },
-  clearFiltersBtn: {
-    width: '100%', padding: '8px', borderRadius: 8,
-    background: 'none', border: '1px solid #E7E5E4',
-    fontSize: '0.78rem', fontWeight: 600, color: '#78716C',
-    cursor: 'pointer', marginTop: 4,
-  },
+  priceInputs: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 },
+  priceInput: { flex: 1, padding: '7px 10px', border: '1px solid #E7E5E4', borderRadius: 7, fontSize: '0.78rem', color: '#0C0A09', width: 0 },
+  priceSep: { fontSize: '0.8rem', color: '#A8A29E', flexShrink: 0 },
+  pricePresets: { display: 'flex', flexWrap: 'wrap' as const, gap: 5 },
+  presetBtn: { padding: '4px 9px', borderRadius: 6, border: '1px solid #E7E5E4', background: 'white', fontSize: '0.72rem', fontWeight: 600, color: '#78716C' },
+  presetBtnActive: { background: '#FFF7ED', borderColor: '#FDBA74', color: '#EA580C' },
+  deliveryBtns: { display: 'flex', gap: 5, flexWrap: 'wrap' as const },
+  deliveryBtn: { padding: '5px 9px', borderRadius: 7, border: '1px solid #E7E5E4', background: 'white', fontSize: '0.75rem', fontWeight: 600, color: '#78716C' },
+  deliveryBtnActive: { background: '#FFF7ED', borderColor: '#FDBA74', color: '#EA580C' },
+  toggleRow: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 10 },
+  toggleTrack: { width: 34, height: 20, borderRadius: 999, background: '#E7E5E4', position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s' },
+  toggleTrackOn: { background: '#F97316' },
+  toggleThumb: { position: 'absolute', top: 3, left: 3, width: 14, height: 14, borderRadius: 999, background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' },
+  toggleThumbOn: { left: 17 },
+  toggleLabel: { fontSize: '0.8rem', fontWeight: 500, color: '#44403C' },
+  cohortNote: { fontSize: '0.72rem', color: '#A8A29E', lineHeight: 1.55 },
+  resetBtn: { width: '100%', padding: '9px', background: 'none', border: '1px solid #E7E5E4', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, color: '#78716C', marginTop: 4 },
 
-  // RESULTS
+  // Results
   results: { flex: 1, minWidth: 0 },
-  toolbar: {
-    display: 'flex', alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap' as const, gap: 12, marginBottom: 18,
-  },
-  toolbarLeft: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const },
-  toolbarRight: { display: 'flex', alignItems: 'center', gap: 8 },
-  resultsCount: { fontSize: '0.85rem', color: '#44403C' },
-  filterChips: { display: 'flex', gap: 6, flexWrap: 'wrap' as const },
-  filterChip: {
-    display: 'inline-flex', alignItems: 'center', gap: 5,
-    background: '#FFF7ED', border: '1px solid #FED7AA',
-    borderRadius: 999, padding: '3px 10px',
-    fontSize: '0.72rem', fontWeight: 600, color: '#EA580C',
-  },
-  chipX: {
-    background: 'none', border: 'none', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', color: '#EA580C', padding: 0,
-  },
-  sortBtn: {
-    display: 'flex', alignItems: 'center', gap: 6,
-    padding: '7px 13px', borderRadius: 8,
-    border: '1px solid #E7E5E4', background: 'white',
-    fontSize: '0.8rem', fontWeight: 600, color: '#44403C', cursor: 'pointer',
-  },
-  sortMenu: {
-    position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-    background: 'white', border: '1px solid #E7E5E4',
-    borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.09)',
-    minWidth: 190, padding: '5px 0', zIndex: 50,
-  },
-  sortItem: {
-    display: 'block', width: '100%', padding: '8px 14px',
-    background: 'none', border: 'none',
-    fontSize: '0.82rem', fontWeight: 500, color: '#1C1917',
-    textAlign: 'left' as const, cursor: 'pointer',
-  },
-  viewToggle: {
-    display: 'flex', background: '#F5F5F4',
-    borderRadius: 8, padding: 3, gap: 2,
-  },
-  viewBtn: {
-    width: 30, height: 30, borderRadius: 6, border: 'none',
-    background: 'transparent', display: 'flex',
-    alignItems: 'center', justifyContent: 'center',
-    color: '#A8A29E', cursor: 'pointer',
-  },
+  resultsBar: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14, gap: 12, flexWrap: 'wrap' as const },
+  resultsBarRight: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const },
+  resultsCount: { fontSize: '0.88rem', fontWeight: 500, color: '#44403C', lineHeight: 1.5 },
+  resultsCat: { color: '#F97316' },
+  resultsSearch: { fontSize: '0.78rem', color: '#A8A29E', marginTop: 2 },
+  filterChips: { display: 'flex', flexWrap: 'wrap' as const, gap: 5 },
+  filterChip: { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 999, padding: '3px 10px', fontSize: '0.72rem', fontWeight: 600, color: '#EA580C' },
+  chipX: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#EA580C', padding: 0 },
+  sortBtn: { display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 8, border: '1px solid #E7E5E4', background: 'white', fontSize: '0.8rem', fontWeight: 600, color: '#44403C' },
+  sortMenu: { position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: 'white', border: '1px solid #E7E5E4', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.09)', minWidth: 190, padding: '5px 0', zIndex: 50 },
+  sortOption: { display: 'block', width: '100%', padding: '8px 14px', background: 'none', border: 'none', fontSize: '0.82rem', fontWeight: 500, color: '#1C1917', textAlign: 'left' as const, cursor: 'pointer' },
+  sortOptionActive: { fontWeight: 700, color: '#F97316' },
+  viewToggle: { display: 'flex', background: '#F5F5F4', borderRadius: 8, padding: 3, gap: 2 },
+  viewBtn: { width: 30, height: 30, borderRadius: 6, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A8A29E', cursor: 'pointer' },
   viewBtnActive: { background: 'white', color: '#0C0A09', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' },
 
-  // GRID
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: 16,
-  },
+  // University quick pills
+  uniPills: { display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' as const },
+  uniPill: { padding: '5px 14px', borderRadius: 999, border: '1px solid #E7E5E4', background: 'white', fontSize: '0.78rem', fontWeight: 600, color: '#78716C' },
+  uniPillActive: { background: '#0C0A09', color: 'white', borderColor: '#0C0A09' },
 
-  // GIG CARD (grid)
-  gigCard: {
-    background: 'white', border: '1px solid #E7E5E4',
-    borderRadius: 12, overflow: 'hidden',
-    display: 'flex', flexDirection: 'column' as const,
-    textDecoration: 'none', color: 'inherit',
-    transition: 'transform 0.2s, box-shadow 0.2s',
-  },
-  gigThumb: {
-    height: 140, background: '#F5F5F4',
-    display: 'flex', alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    padding: '10px 12px',
-    borderBottom: '1px solid #E7E5E4',
-    position: 'relative',
-  },
-  gigThumbLabel: {
-    fontSize: '0.63rem', fontWeight: 700,
-    textTransform: 'uppercase' as const, letterSpacing: '0.07em',
-    color: '#78716C', background: 'white',
-    border: '1px solid #E7E5E4', borderRadius: 999, padding: '3px 9px',
-  },
-  featuredBadge: {
-    fontSize: '0.63rem', fontWeight: 700,
-    background: '#FFF7ED', color: '#EA580C',
-    border: '1px solid #FED7AA', borderRadius: 999,
-    padding: '3px 9px', letterSpacing: '0.04em',
-  },
-  featuredDot: {
-    width: 7, height: 7, borderRadius: 999,
-    background: '#F97316', marginTop: 4, flexShrink: 0,
-  },
-  gigBody: { padding: '13px 14px 10px' },
-  sellerRow: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 },
-  sellerAvatar: {
-    width: 22, height: 22, borderRadius: 999, color: 'white',
-    fontSize: '0.55rem', fontWeight: 800,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  sellerName: { fontSize: '0.75rem', fontWeight: 600, color: '#44403C' },
-  gigTitle: {
-    fontSize: '0.84rem', fontWeight: 600, color: '#0C0A09',
-    lineHeight: 1.45, marginBottom: 10,
-    display: '-webkit-box',
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: 'vertical' as const,
-    overflow: 'hidden',
-  },
-  gigTagsRow: { display: 'flex', gap: 5, flexWrap: 'wrap' as const },
-  tag: {
-    fontSize: '0.65rem', fontWeight: 600, color: '#78716C',
-    background: '#F5F5F4', border: '1px solid #E7E5E4',
-    borderRadius: 999, padding: '2px 8px',
-  },
-  gigFooter: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '10px 14px 14px',
-    borderTop: '1px solid #F5F5F4', marginTop: 'auto',
-  },
-  gigFooterLeft: { display: 'flex', flexDirection: 'column' as const, gap: 4 },
-  ratingRow: { display: 'flex', alignItems: 'center', gap: 4 },
-  ratingNum: { fontSize: '0.78rem', fontWeight: 700, color: '#0C0A09' },
-  ratingCount: { fontSize: '0.72rem', color: '#A8A29E' },
-  deliveryRow: {
-    display: 'flex', alignItems: 'center', gap: 4,
-    fontSize: '0.72rem', color: '#78716C',
-  },
-  priceFrom: { fontSize: '0.68rem', color: '#A8A29E', display: 'block', marginBottom: 1 },
-  priceVal: { fontSize: '0.88rem', fontWeight: 800, color: '#0C0A09', display: 'block' },
+  // Gig grid
+  gigsGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 },
 
-  // LIST VIEW
+  // Gig card
+  gigCard: { background: 'white', border: '1px solid #E7E5E4', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' as const },
+  gigCardExpired: { opacity: 0.6 },
+  gigThumb: { height: 140, background: '#F5F5F4', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: '10px 12px', borderBottom: '1px solid #E7E5E4' },
+  featuredBadge: { position: 'absolute', top: 10, left: 10, background: '#0C0A09', color: 'white', fontSize: '0.62rem', fontWeight: 800, padding: '3px 9px', borderRadius: 999, letterSpacing: '0.04em', textTransform: 'uppercase' as const },
+  expiredOverlay: { position: 'absolute', inset: 0, background: 'rgba(245,245,244,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  expiredLabel: { background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '0.72rem', fontWeight: 700, padding: '4px 12px', borderRadius: 999 },
+  saveBtn: { position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 999, background: 'rgba(0,0,0,0.22)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  saveBtnActive: { background: '#FFF7ED' },
+  gigThumbCat: { fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.07em', color: '#78716C', background: 'white', border: '1px solid #E7E5E4', borderRadius: 999, padding: '3px 10px' },
+  gigBody: { padding: '14px 16px 10px', flex: 1 },
+  sellerRow: { display: 'flex', alignItems: 'center', gap: 7, marginBottom: 9 },
+  sellerAvatar: { width: 24, height: 24, borderRadius: 999, color: 'white', fontSize: '0.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  sellerInfo: { display: 'flex', flexDirection: 'column' as const, minWidth: 0, flex: 1 },
+  sellerName: { fontSize: '0.75rem', fontWeight: 700, color: '#0C0A09', lineHeight: 1.2 },
+  sellerUni: { fontSize: '0.68rem', color: '#A8A29E', lineHeight: 1.2, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' },
+  sellerUniInline: { fontSize: '0.72rem', color: '#A8A29E', fontWeight: 500 },
+  verifiedBadge: { display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0, background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 999, padding: '2px 7px', fontSize: '0.62rem', fontWeight: 700, color: '#16A34A' },
+  gigTitle: { fontSize: '0.84rem', fontWeight: 600, color: '#0C0A09', lineHeight: 1.5, marginBottom: 10, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' },
+  gigTags: { display: 'flex', flexWrap: 'wrap' as const, gap: 5 },
+  gigTag: { fontSize: '0.65rem', fontWeight: 600, color: '#78716C', background: '#F5F5F4', border: '1px solid #E7E5E4', borderRadius: 6, padding: '2px 8px' },
+  gigFooter: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 14px', borderTop: '1px solid #F5F5F4' },
+  gigFooterLeft: { display: 'flex', flexDirection: 'column' as const, gap: 5 },
+  gigDelivery: { display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: '#78716C', fontWeight: 500 },
+  gigPriceWrap: { textAlign: 'right' as const },
+  gigPriceFrom: { fontSize: '0.68rem', color: '#A8A29E', display: 'block' },
+  gigPrice: { fontSize: '0.88rem', fontWeight: 800, color: '#0C0A09' },
+
+  // Access badge
+  accessBadge: { display: 'inline-block', fontSize: '0.65rem', fontWeight: 700, borderRadius: 999, padding: '2px 9px' },
+
+  // List view
   listWrap: { display: 'flex', flexDirection: 'column' as const, gap: 10 },
-  gigCardList: {
-    background: 'white', border: '1px solid #E7E5E4',
-    borderRadius: 12, overflow: 'hidden',
-    display: 'flex', textDecoration: 'none', color: 'inherit',
-  },
-  gigListThumb: {
-    width: 120, flexShrink: 0, background: '#F5F5F4',
-    display: 'flex', flexDirection: 'column' as const,
-    alignItems: 'flex-start', justifyContent: 'space-between',
-    padding: '10px 10px',
-    borderRight: '1px solid #E7E5E4',
-  },
-  gigListBody: {
-    flex: 1, padding: '14px 16px',
-    display: 'flex', justifyContent: 'space-between',
-    gap: 16, minWidth: 0,
-  },
-  gigListTop: { flex: 1, minWidth: 0 },
-  gigListTitle: {
-    fontSize: '0.88rem', fontWeight: 600, color: '#0C0A09',
-    lineHeight: 1.45, marginBottom: 8,
-  },
-  gigListMeta: { display: 'flex', alignItems: 'center', gap: 16 },
-  gigListPrice: {
-    display: 'flex', flexDirection: 'column' as const,
-    alignItems: 'flex-end', justifyContent: 'center',
-    padding: '14px 16px', flexShrink: 0, gap: 8,
-    borderLeft: '1px solid #F5F5F4',
-  },
-  bookBtnSm: {
-    background: '#F97316', color: 'white', border: 'none',
-    borderRadius: 7, padding: '7px 16px',
-    fontSize: '0.78rem', fontWeight: 700,
-  },
+  gigRow: { background: 'white', border: '1px solid #E7E5E4', borderRadius: 12, overflow: 'hidden', display: 'flex' },
+  gigRowThumb: { width: 110, flexShrink: 0, background: '#F5F5F4', borderRight: '1px solid #E7E5E4', display: 'flex', alignItems: 'flex-end', padding: '10px 10px' },
+  gigRowBody: { flex: 1, padding: '14px 16px', minWidth: 0 },
+  gigRowTitle: { fontSize: '0.88rem', fontWeight: 600, color: '#0C0A09', lineHeight: 1.45, marginBottom: 10 },
+  gigRowMeta: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' as const },
+  gigRowPrice: { display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', justifyContent: 'center', padding: '14px 18px', flexShrink: 0, gap: 6, borderLeft: '1px solid #F5F5F4' },
+  bookBtn: { background: '#F97316', color: 'white', border: 'none', borderRadius: 7, padding: '7px 16px', fontSize: '0.78rem', fontWeight: 700 },
 
-  // EMPTY STATE
-  emptyState: {
-    background: 'white', border: '1px solid #E7E5E4',
-    borderRadius: 14, padding: '60px 24px',
-    textAlign: 'center' as const,
-  },
-  emptyIcon: {
-    width: 44, height: 44, borderRadius: 12,
-    background: '#F5F5F4', display: 'flex',
-    alignItems: 'center', justifyContent: 'center',
-    margin: '0 auto 14px', color: '#A8A29E',
-  },
-  emptyTitle: { fontWeight: 700, fontSize: '0.95rem', color: '#0C0A09', marginBottom: 6 },
-  emptySub: { fontSize: '0.82rem', color: '#78716C', marginBottom: 20 },
-  emptyBtn: {
-    background: '#F97316', color: 'white', border: 'none',
-    borderRadius: 8, padding: '9px 20px',
-    fontSize: '0.82rem', fontWeight: 700,
-  },
+  // Empty state
+  emptyState: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', padding: '80px 24px', gap: 10, background: 'white', borderRadius: 12, border: '1px solid #E7E5E4' },
+  emptyTitle: { fontSize: '1rem', fontWeight: 700, color: '#0C0A09', marginTop: 8 },
+  emptySub: { fontSize: '0.85rem', color: '#A8A29E' },
+  emptyClear: { marginTop: 8, padding: '8px 20px', background: '#F97316', color: 'white', border: 'none', borderRadius: 8, fontSize: '0.82rem', fontWeight: 700 },
 };

@@ -1,3 +1,5 @@
+import BusinessAnalytics from '@/components/BusinessAnalytics';
+
 'use client';
 
 import { useState } from 'react';

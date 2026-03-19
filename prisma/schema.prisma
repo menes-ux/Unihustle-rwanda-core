@@ -3,45 +3,59 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 model User {
-  user_id Int @id @default(autoincrement())
+  user_id   Int    @id @default(autoincrement())
   full_name String
-  email String @unique
-  role Role 
+  email     String @unique
+  role      Role 
+
+
+  school       String   @default("ALU") // Defaults to ALU, can change for other unis
+  skills       String[] // Stores an array of skills e.g. ["Figma", "React"]
+  hustle_score Int      @default(100)   // The fair ranking metric (1-100%)
+  is_alumni    Boolean  @default(false) // For the 2-year transition
+
+  // Relations
+  gigs           Gig[]           @relation("StudentGigs")
+  orders         Order[]         @relation("BusinessOrders")
+  portfolio_items PortfolioItem[] // Links to their personal projects
+}
+
+
+model PortfolioItem {
+  portfolio_id Int    @id @default(autoincrement())
+  title        String // e.g., "Malaria Tracker UI"
+  link         String // Link to GitHub, Behance, or live site
   
-  // A student can create many gigs
-  gigs Gig[] @relation("StudentGigs")
-  
-  // A business can place many orders
-  orders Order[] @relation("BusinessOrders")
+  student_id   Int
+  student      User   @relation(fields: [student_id], references: [user_id])
 }
 
 model Gig {
-  gig_id Int @id @default(autoincrement())
-  title String
+  gig_id   Int       @id @default(autoincrement())
+  title    String
   category String
-  price Int @default(0)
-  status GigStatus
+  price    Int       @default(0)
+  status   GigStatus
 
-  // The Student who created the gig
   student_id Int
-  student User @relation("StudentGigs", fields: [student_id], references: [user_id])
+  student    User @relation("StudentGigs", fields: [student_id], references: [user_id])
 
-  orders Order[]
+  orders  Order[]
   reviews Review[]
 }
 
 model Order {
   order_id Int @id @default(autoincrement())
 
-  gig_id Int
-  buyer_id Int // The Business buying the gig
+  gig_id   Int
+  buyer_id Int 
 
-  gig Gig @relation(fields: [gig_id], references: [gig_id])
+  gig   Gig  @relation(fields: [gig_id], references: [gig_id])
   buyer User @relation("BusinessOrders", fields: [buyer_id], references: [user_id])
 
   status OrderStatus
@@ -50,8 +64,8 @@ model Order {
 model Review {
   review_id Int @id @default(autoincrement())
 
-  gig_id Int
-  rating Int
+  gig_id  Int
+  rating  Int
   comment String
 
   gig Gig @relation(fields: [gig_id], references: [gig_id])

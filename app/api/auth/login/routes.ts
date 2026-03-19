@@ -1,4 +1,4 @@
-// only allwos verifies users to login in
+// only allows verified users to login in
 
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"

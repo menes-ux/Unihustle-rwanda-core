@@ -19,6 +19,11 @@ model User {
   hustle_score Int      @default(100)   // The fair ranking metric (1-100%)
   is_alumni    Boolean  @default(false) // For the 2-year transition
 
+  // to verify the email
+  is_verified Boolean @default(false)
+  verification_code String?
+  verification_expires DateTime?
+
   // Relations
   gigs           Gig[]           @relation("StudentGigs")
   orders         Order[]         @relation("BusinessOrders")

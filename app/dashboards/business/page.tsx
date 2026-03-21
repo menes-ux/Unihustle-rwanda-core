@@ -494,7 +494,7 @@ export default function BusinessDashboard() {
                           <div style={{ ...s.roiBarFill, width: `${pct}%` }} />
                         </div>
                         <span style={s.roiRowSaved}>
-                          -{saved.toLocaleString()} RWF
+                          +{saved.toLocaleString()} RWF
                         </span>
                       </div>
                     </div>

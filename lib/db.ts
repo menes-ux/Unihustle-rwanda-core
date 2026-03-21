@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg"
 import pkg from "pg"
 
 const { Pool } = pkg
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const pool = new Pool({ connectionString: process.env.DATABASE_URL as string })
 const adapter = new PrismaPg(pool)
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }

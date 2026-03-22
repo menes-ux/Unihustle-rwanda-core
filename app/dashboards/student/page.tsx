@@ -72,3 +72,31 @@ const Icon = {
   Verified:     () => <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
 };
 
+// ─── Portfolio Card ───────────────────────────────────────────────────────────
+
+function PortfolioCard({ project }: { project: PortfolioProject }) {
+  const typeConfig: Record<PortfolioProject['type'], { icon: React.ReactNode; label: string; color: string; bg: string }> = {
+    GitHub:  { icon: <Icon.Github />,  label: 'GitHub',  color: '#0C0A09', bg: '#F5F5F4' },
+    Figma:   { icon: <Icon.Figma />,   label: 'Figma',   color: '#8B5CF6', bg: '#F5F3FF' },
+    Live:    { icon: <Icon.Globe />,   label: 'Live',    color: '#16A34A', bg: '#F0FDF4' },
+    Behance: { icon: <Icon.Globe />,   label: 'Behance', color: '#0061FF', bg: '#EFF6FF' },
+  };
+  const cfg = typeConfig[project.type];
+  return (
+    <div style={s.portfolioCard}>
+      <div style={s.portfolioCardTop}>
+        <span style={{ ...s.portfolioTypeBadge, color: cfg.color, background: cfg.bg }}>
+          {cfg.icon}{cfg.label}
+        </span>
+        <a href={project.url} target="_blank" rel="noopener noreferrer" style={s.portfolioLink}>
+          <Icon.ExternalLink />
+        </a>
+      </div>
+      <p style={s.portfolioTitle}>{project.title}</p>
+      <p style={s.portfolioDesc}>{project.description}</p>
+      <div style={s.portfolioTags}>
+        {project.tags.map(tag => <span key={tag} style={s.portfolioTag}>{tag}</span>)}
+      </div>
+    </div>
+  );
+}

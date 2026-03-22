@@ -2,7 +2,7 @@
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function BusinessChart({ data }) {
+export default function BusinessChart({ data }: { data: any[] }) {
   return (
     <div style={{ height: 300, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">

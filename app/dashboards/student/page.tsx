@@ -363,3 +363,52 @@ export default async function StudentDashboard({
               </div>
             </div>
 
+{/* Jobs Completed — count of completed orders */}
+            <div style={s.statCard}>
+              <div style={s.statIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <div>
+                <p style={s.statLabel}>Jobs Completed</p>
+                <p style={s.statValue}>{completedJobs}</p>
+                <p style={s.statSub}>Paid and delivered</p>
+              </div>
+            </div>
+
+            {/* Academic GPA — from dbUser.gpa, colour-coded */}
+            <div style={s.statCard}>
+              <div style={s.statIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                  <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                </svg>
+              </div>
+              <div>
+                <p style={s.statLabel}>Academic GPA</p>
+                {gpa !== null && gpaStyle ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <p style={s.statValue}>{gpa.toFixed(2)}</p>
+                      <span style={{
+                        fontSize: '0.65rem', fontWeight: 700, borderRadius: 999,
+                        padding: '2px 9px', whiteSpace: 'nowrap' as const,
+                        color: gpaStyle.color, background: gpaStyle.bg,
+                        border: `1px solid ${gpaStyle.border}`,
+                      }}>
+                        {gpaStyle.label}
+                      </span>
+                    </div>
+                    <p style={s.statSub}>Hustle score: {hustleScore}</p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ ...s.statValue, fontSize: '0.85rem', color: '#A8A29E', fontWeight: 500 }}>Not set</p>
+                    <p style={s.statSub}>Add GPA in profile settings</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+

@@ -185,3 +185,105 @@ export default async function StudentDashboard({
   const hustleScore = dbUser.hustle_score ?? 0;
   const isVerified  = dbUser.is_verified ?? false;
 
+// GPA is stored on the user record; fall back to null if not set yet
+  const gpa      = (dbUser as any).gpa ?? null;
+  const gpaStyle = gpa !== null ? getGpaStyle(gpa) : null;
+
+  // Static profile fields — these will come from the DB once the schema
+  // has university, cohort, major, bio, and skills columns added.
+  const UNIVERSITY = 'African Leadership University';
+  const COHORT     = 'Class of 2026';
+  const YEAR       = 'Year 2';
+  const MAJOR      = 'BSc. Software Engineering';
+  const BIO        = 'Full-stack developer with a focus on scalable web applications. Passionate about building products that solve real African problems.';
+  const SKILLS     = ['React', 'Next.js', 'PostgreSQL', 'Node.js', 'Figma', 'TypeScript'];
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  return (
+    <div style={s.root}>
+
+      {/* ── NAV ──────────────────────────────────────────────── */}
+      <nav style={s.nav}>
+        <div style={s.navInner}>
+          <Link href="/" style={s.logo}>
+            <div style={s.logoMark}><Icon.Logo /></div>
+            <span style={s.logoText}>UniHustle</span>
+          </Link>
+          <div style={s.navRight}>
+            <Link href="#" style={s.switchLink}>
+              <Icon.Switch /> Switch to Buying
+            </Link>
+            <Link href="#" style={s.navLink}>
+              <Icon.Orders />
+              Orders
+              {activeOrders.length > 0 && (
+                <span style={s.navBadge}>{activeOrders.length}</span>
+              )}
+            </Link>
+            <button style={s.avatar} aria-label="Profile">{initials}</button>
+          </div>
+        </div>
+      </nav>
+
+      <main style={s.main}>
+        <div style={s.container}></div>
+
+{/* ── PROFILE HEADER ─────────────────────────────────
+              Two states:
+              1. No name yet → show the "Complete Your Profile" onboarding card
+              2. Name exists → show the full styled profile card
+          */}
+          {!hasName ? (
+
+            // ── ONBOARDING STATE: student hasn't set their name yet ──
+            <div style={s.profileCard}>
+              <div style={s.profileCardLeft}>
+                <div style={{ ...s.profileBigAvatar, background: '#F5F5F4', color: '#A8A29E', fontSize: '1.8rem' }}>
+                  ?
+                </div>
+                <div style={s.profileDetails}>
+                  <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0C0A09', marginBottom: 4 }}>
+                    Complete Your Profile
+                  </h2>
+                  <p style={{ fontSize: '0.83rem', color: '#78716C', marginBottom: 16 }}>
+                    What should we call you on UniHustle? This name will be visible to businesses.
+                  </p>
+                  {/* Server Action form — logic untouched, only styled */}
+                  <form action={updateProfileName} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      name="fullName"
+                      placeholder="e.g. Menes Adisso"
+                      required
+                      style={{
+                        padding: '10px 14px',
+                        border: '1.5px solid #E7E5E4',
+                        borderRadius: 10,
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        fontSize: '0.875rem',
+                        color: '#0C0A09',
+                        background: 'white',
+                        outline: 'none',
+                        width: 260,
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        background: '#F97316', color: 'white', border: 'none',
+                        borderRadius: 9, padding: '10px 20px',
+                        fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      }}
+                    >
+                      Save Name
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+          ) : (
+

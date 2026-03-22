@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         // the generated code to make local end-to-end testing possible.
         let emailSent = false
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-           // await sendVerificationEmail(email, code)
+            await sendVerificationEmail(email, code)
             emailSent = true
         }
 

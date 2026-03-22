@@ -1,27 +1,174 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+type VerifyCodeResponse = {
+  message?: string;
+  error?: string;
+  user?: {
+    role: "student" | "business";
+  };
+};
 
-type Mode = 'login' | 'register';
-type Role = 'student' | 'business';
-
+/**
+ * The main authentication page for UniHustle.
+ *
+ * There is no traditional "sign up" or "log in" distinction here.
+ * The backend handles everything automatically:
+ * - If the email is new, a user account is created on the fly.
+ * - If the email already exists, the user is simply logged back in.
+ *
+ * Both paths end up at the same place: a 6-digit OTP sent to the user's inbox.
+ *
+ * The only thing we ask upfront is the user's role (Student or Business)
+ * so we can route them to the right dashboard after verification,
+ * and apply the correct email validation rules.
+ */
 export default function AuthPage() {
-  const [mode, setMode] = useState<Mode>('login');
-  const [role, setRole] = useState<Role>('student');
-  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
-  const isRegister = mode === 'register';
-  const isStudent = role === 'student';
+  // ── Form state ─────────────────────────────────────────────────────────────
+
+  // We track the email and role before the code is sent,
+  // and the OTP code itself after it arrives.
+  const [email, setEmail]   = useState("");
+  const [role, setRole]     = useState<"student" | "business">("student");
+  const [code, setCode]     = useState("");
+
+  // ── UI state ───────────────────────────────────────────────────────────────
+
+  // step 1 = email entry, step 2 = OTP entry.
+  // We keep it as a number so it's easy to extend if needed.
+  const [step, setStep]           = useState<1 | 2>(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]         = useState("");
+  const [devCodeHint, setDevCodeHint] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // toggles OTP visibility
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  /**
+   * Clears the error banner and goes back to step 1 so the user
+   * can change their email if they made a typo.
+   */
+  const handleGoBack = () => {
+    setError("");
+    setCode("");
+    setStep(1);
+  };
+
+  // ── Step 1: Send the OTP ───────────────────────────────────────────────────
+
+  /**
+   * Fires when the user submits their email.
+   *
+   * Sends a POST to /api/auth/request-code with the email and role.
+   * The backend will:
+   *   - Check if the email exists in the User table.
+   *   - Create a new row if not (auto-signup).
+   *   - Generate a 6-digit code, save it to the DB, and email it.
+   *
+   * On success we just move to step 2. No need to tell the user
+   * whether they're "new" or "returning" — it doesn't matter to them.
+   */
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setDevCodeHint("");
+
+    try {
+      const res = await fetch("/api/auth/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // The backend sends back a human-readable error string.
+        // This could be "Invalid ALU email" or "Server error", etc.
+        throw new Error(data.error || "Failed to send code. Please try again.");
+      }
+
+      if (data.devCode) {
+        setDevCodeHint(`Local dev code: ${data.devCode}`);
+      }
+      setStep(2);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to send verification code.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── Step 2: Verify the OTP ─────────────────────────────────────────────────
+
+  /**
+   * Fires when the user submits their 6-digit code.
+   *
+   * Sends a POST to /api/auth/verify-code with the email and code.
+   * The backend will:
+   *   - Look up the user by email.
+   *   - Compare the submitted code to the one stored in verification_code.
+   *   - Clear the code from the DB once verified (one-time use).
+   *   - Return a session token or set an auth cookie.
+   *
+   * On success we redirect based on role.
+   * Students go to their seller dashboard, businesses to the buyer dashboard.
+   */
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setDevCodeHint("");
+
+    try {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+
+      const data: VerifyCodeResponse = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Invalid or expired code. Please try again.");
+      }
+
+      // Redirect to the correct dashboard based on the role selected at the start.
+      // The backend can also return the role if you want to derive it from the DB instead.
+      const verifiedRole = data.user?.role ?? role;
+      localStorage.setItem("unihustle_email", email);
+      localStorage.setItem("unihustle_role", verifiedRole);
+      const encodedEmail = encodeURIComponent(email);
+      router.push(
+        verifiedRole === "business"
+          ? `/dashboards/business?email=${encodedEmail}`
+          : `/dashboards/student?email=${encodedEmail}`
+      );
+
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to verify code.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="auth-root">
-      {/* ── LEFT PANEL ─────────────────────────────────────── */}
+
+      {/* ── LEFT PANEL ─────────────────────────────────────────────────────────
+          Decorative panel — only visible on screens wider than 900px.
+          Contains the brand quote, stats, and the ALU verified note.
+      */}
       <div className="auth-left">
-        {/* Subtle grid texture */}
         <div className="auth-left-grid" aria-hidden />
 
-        {/* Logo */}
         <Link href="/" className="auth-logo">
           <div className="auth-logo-mark">
             <svg viewBox="0 0 24 24" fill="white" width={18} height={18}>
@@ -31,18 +178,16 @@ export default function AuthPage() {
           <span>UniHustle</span>
         </Link>
 
-        {/* Main quote */}
         <div className="auth-left-content">
           <div className="auth-left-tag">ALU Rwanda · 2026 Pilot</div>
           <blockquote className="auth-quote">
-            "Break the experience paradox. Build your portfolio{' '}
-            <em>before graduation.</em>"
+            &ldquo;Break the experience paradox. Build your portfolio{" "}
+            <em>before graduation.</em>&rdquo;
           </blockquote>
           <p className="auth-left-sub">
-            The merit-based freelance marketplace built exclusively for ALU students and Rwandan businesses.
+            The merit-based freelance marketplace built exclusively for ALU students
+            and Rwandan businesses.
           </p>
-
-          {/* Floating stat pills */}
           <div className="auth-stats">
             <div className="auth-stat-pill">
               <span className="auth-stat-num">200+</span>
@@ -54,12 +199,11 @@ export default function AuthPage() {
             </div>
             <div className="auth-stat-pill">
               <span className="auth-stat-num">4.9</span>
-              <span className="auth-stat-label">avg. rating</span>
+              <span className="auth-stat-label">avg. satisfaction</span>
             </div>
           </div>
         </div>
 
-        {/* Bottom ALU badge */}
         <div className="auth-left-footer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
             <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -68,258 +212,288 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ────────────────────────────────────── */}
+      {/* ── RIGHT PANEL ────────────────────────────────────────────────────────
+          The actual form lives here.
+          It renders two distinct views based on `step`:
+            Step 1 → Role selector + Email input
+            Step 2 → 6-digit OTP input
+      */}
       <div className="auth-right">
         <div className="auth-form-wrap">
 
-          {/* Mode toggle: Login / Register */}
-          <div className="auth-mode-tabs">
-            <button
-              className={`auth-mode-tab${mode === 'login' ? ' active' : ''}`}
-              onClick={() => setMode('login')}
-            >
-              Log In
-            </button>
-            <button
-              className={`auth-mode-tab${mode === 'register' ? ' active' : ''}`}
-              onClick={() => setMode('register')}
-            >
-              Sign Up
-            </button>
+          {/* Brand mark — visible on mobile where the left panel is hidden */}
+          <div className="auth-mobile-logo">
+            <div className="auth-logo-mark">
+              <svg viewBox="0 0 24 24" fill="white" width={16} height={16}>
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            </div>
+            <span>UniHustle</span>
           </div>
 
-          {/* Heading */}
-          <div className="auth-form-head">
-            <h1 className="auth-form-title">
-              {isRegister ? 'Create your account' : 'Welcome back'}
-            </h1>
-            <p className="auth-form-sub">
-              {isRegister
-                ? 'Join the community — it only takes a minute.'
-                : 'Log in to your UniHustle dashboard.'}
-            </p>
-          </div>
-
-          {/* Role toggle (register only) */}
-          {isRegister && (
-            <div className="auth-role-toggle">
-              <button
-                className={`auth-role-btn${isStudent ? ' active' : ''}`}
-                onClick={() => setRole('student')}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                  <path d="M6 12v5c3 3 9 3 12 0v-5" />
-                </svg>
-                Student
-              </button>
-              <button
-                className={`auth-role-btn${!isStudent ? ' active' : ''}`}
-                onClick={() => setRole('business')}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                  <rect x="2" y="7" width="20" height="14" rx="2" />
-                  <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
-                </svg>
-                Business
-              </button>
+          {/* ── ERROR BANNER ─────────────────────────────────────────────────
+              Appears above the form whenever the API returns an error.
+              Cleared automatically when the user starts a new request.
+          */}
+          {error && (
+            <div className="auth-error">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {error}
+            </div>
+          )}
+          {devCodeHint && (
+            <div className="auth-email-badge" style={{ marginBottom: 12 }}>
+              <span>{devCodeHint}</span>
             </div>
           )}
 
-          {/* Form */}
-          <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
-
-            {/* Register-only: name fields */}
-            {isRegister && (
-              <>
-                {isStudent ? (
-                  <div className="auth-field">
-                    <label className="auth-label">Full Name</label>
-                    <input
-                      type="text"
-                      className="auth-input"
-                      placeholder="Your full name"
-                      autoComplete="name"
-                    />
-                  </div>
-                ) : (
-                  <div className="auth-field">
-                    <label className="auth-label">Company Name</label>
-                    <input
-                      type="text"
-                      className="auth-input"
-                      placeholder="Your company name"
-                      autoComplete="organization"
-                    />
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Email */}
-            <div className="auth-field">
-              <label className="auth-label">
-                {isRegister && !isStudent ? 'Work Email' : 'Email'}
-              </label>
-              <div className="auth-input-wrap">
-                <span className="auth-input-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                    <polyline points="22,6 12,13 2,6" />
-                  </svg>
-                </span>
-                <input
-                  type="email"
-                  className="auth-input has-icon"
-                  placeholder={
-                    isRegister && !isStudent
-                      ? 'you@company.com'
-                      : 'yourname@alustudent.com'
-                  }
-                  autoComplete="email"
-                />
+          {/* ════════════════════════════════════════════════════════════════
+              STEP 1 — Email & Role
+              The user picks their role and types their email.
+              No password. No "create account" vs "log in" distinction.
+              Everything is handled by the backend from here.
+          ════════════════════════════════════════════════════════════════ */}
+          {step === 1 && (
+            <>
+              <div className="auth-form-head">
+                <h1 className="auth-form-title">Welcome to UniHustle</h1>
+                <p className="auth-form-sub">
+                  Enter your email to get started. We&rsquo;ll send you a quick verification
+                  code — no password needed.
+                </p>
               </div>
-              {/* Trust badge — student only */}
-              {(!isRegister || isStudent) && (
-                <div className="auth-trust-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
-                    <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  Requires verified ALU student email
-                </div>
-              )}
-            </div>
 
-            {/* Password */}
-            <div className="auth-field">
-              <div className="auth-label-row">
-                <label className="auth-label">Password</label>
-                {!isRegister && (
-                  <a href="#" className="auth-forgot">Forgot password?</a>
-                )}
-              </div>
-              <div className="auth-input-wrap">
-                <span className="auth-input-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                    <rect x="3" y="11" width="18" height="11" rx="2" />
-                    <path d="M7 11V7a5 5 0 0110 0v4" />
-                  </svg>
-                </span>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="auth-input has-icon has-toggle"
-                  placeholder={isRegister ? 'Create a strong password' : 'Enter your password'}
-                  autoComplete={isRegister ? 'new-password' : 'current-password'}
-                />
+              {/* Role selector — students need an @alustudent.com address,
+                  businesses can use any work email. This drives both the
+                  email placeholder text and the post-verification redirect. */}
+              <div className="auth-role-toggle">
                 <button
+                  className={`auth-role-btn${role === "student" ? " active" : ""}`}
+                  onClick={() => setRole("student")}
                   type="button"
-                  className="auth-pw-toggle"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                  </svg>
+                  I&rsquo;m a Student
+                </button>
+                <button
+                  className={`auth-role-btn${role === "business" ? " active" : ""}`}
+                  onClick={() => setRole("business")}
+                  type="button"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+                    <rect x="2" y="7" width="20" height="14" rx="2" />
+                    <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
+                  </svg>
+                  I&rsquo;m a Business
                 </button>
               </div>
-            </div>
 
-            {/* Register: confirm password */}
-            {isRegister && (
-              <div className="auth-field">
-                <label className="auth-label">Confirm Password</label>
-                <div className="auth-input-wrap">
-                  <span className="auth-input-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                      <rect x="3" y="11" width="18" height="11" rx="2" />
-                      <path d="M7 11V7a5 5 0 0110 0v4" />
-                    </svg>
-                  </span>
-                  <input
-                    type="password"
-                    className="auth-input has-icon"
-                    placeholder="Repeat your password"
-                    autoComplete="new-password"
-                  />
+              <form className="auth-form" onSubmit={handleSendCode}>
+                <div className="auth-field">
+                  <label className="auth-label">Email Address</label>
+                  <div className="auth-input-wrap">
+                    <span className="auth-input-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                      </svg>
+                    </span>
+                    <input
+                      type="email"
+                      className="auth-input has-icon"
+                      placeholder={
+                        role === "student" ? "yourname@alustudent.com" : "you@company.com"
+                      }
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+
+                  {/* Shown only for students — a small reassurance that
+                      the ALU email requirement is intentional and enforced. */}
+                  {role === "student" && (
+                    <div className="auth-trust-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
+                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      Requires a verified @alustudent.com email
+                    </div>
+                  )}
                 </div>
+
+                <button type="submit" className="auth-submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <span className="auth-spinner" />
+                      Sending code...
+                    </>
+                  ) : (
+                    <>
+                      Send Verification Code
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+
+                {/* Divider + OAuth
+                    These are supplementary sign-in options.
+                    They should hit the same backend logic — just via OAuth tokens
+                    instead of email codes. */}
+                <div className="auth-divider"><span>or continue with</span></div>
+                <div className="auth-oauth">
+                  <button type="button" className="auth-oauth-btn">
+                    <svg viewBox="0 0 24 24" width={18} height={18}>
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Google
+                  </button>
+                  <button type="button" className="auth-oauth-btn">
+                    <svg viewBox="0 0 24 24" fill="#0A66C2" width={18} height={18}>
+                      <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
+                      <circle cx="4" cy="4" r="2"/>
+                    </svg>
+                    LinkedIn
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+
+          {/* ════════════════════════════════════════════════════════════════
+              STEP 2 — OTP Verification
+              The user receives a 6-digit code by email and types it here.
+              We show which address we sent it to for clarity.
+              The "back" link lets them correct a typo without refreshing.
+          ════════════════════════════════════════════════════════════════ */}
+          {step === 2 && (
+            <>
+              <div className="auth-form-head">
+                <h1 className="auth-form-title">Check your inbox</h1>
+                <p className="auth-form-sub">
+                  We sent a 6-digit code to{" "}
+                  <strong style={{ color: "#0C0A09" }}>{email}</strong>.
+                  It expires in 10 minutes.
+                </p>
               </div>
-            )}
 
-            {/* Register: terms */}
-            {isRegister && (
-              <label className="auth-terms">
-                <input type="checkbox" className="auth-checkbox" />
-                <span>
-                  I agree to the{' '}
-                  <a href="#" className="auth-link">Terms of Service</a>{' '}
-                  and{' '}
-                  <a href="#" className="auth-link">Privacy Policy</a>
-                </span>
-              </label>
-            )}
-
-            {/* Submit */}
-            <button type="submit" className="auth-submit">
-              {isRegister
-                ? isStudent
-                  ? 'Create Student Account'
-                  : 'Create Business Account'
-                : 'Log In to UniHustle'}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </button>
-
-            {/* Divider */}
-            <div className="auth-divider">
-              <span>or continue with</span>
-            </div>
-
-            {/* OAuth */}
-            <div className="auth-oauth">
-              <button type="button" className="auth-oauth-btn">
-                {/* Google */}
-                <svg viewBox="0 0 24 24" width={18} height={18}>
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              {/* Visual indicator of which email the code went to */}
+              <div className="auth-email-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
                 </svg>
-                Google
-              </button>
-              <button type="button" className="auth-oauth-btn">
-                {/* LinkedIn */}
-                <svg viewBox="0 0 24 24" fill="#0A66C2" width={18} height={18}>
-                  <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
-                  <circle cx="4" cy="4" r="2"/>
-                </svg>
-                LinkedIn
-              </button>
-            </div>
-          </form>
+                <span>{email}</span>
+                {/* Go back lets the user fix a typo in their email
+                    without having to hard-refresh the page. */}
+                <button type="button" className="auth-change-email" onClick={handleGoBack}>
+                  Change
+                </button>
+              </div>
 
-          {/* Mode switch link */}
-          <p className="auth-switch">
-            {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button
-              className="auth-switch-btn"
-              onClick={() => setMode(isRegister ? 'login' : 'register')}
-            >
-              {isRegister ? 'Log in' : 'Sign up free'}
-            </button>
-          </p>
+              <form className="auth-form" onSubmit={handleVerifyCode}>
+                <div className="auth-field">
+                  <label className="auth-label">Verification Code</label>
+                  <div className="auth-input-wrap">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="auth-input auth-otp-input has-toggle"
+                      placeholder="· · · · · ·"
+                      value={code}
+                      onChange={(e) => {
+                        // Only allow digits, max 6 characters
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        setCode(val);
+                      }}
+                      maxLength={6}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      autoFocus
+                      required
+                    />
+                    {/* Toggle to reveal the code digits — useful on mobile
+                        where fat-finger errors are common. */}
+                    <button
+                      type="button"
+                      className="auth-pw-toggle"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Hide code" : "Show code"}
+                    >
+                      {showPassword ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+                          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Character counter — gives the user a clear signal
+                      of how many digits they have left to type. */}
+                  <p className="auth-code-hint">{code.length} / 6 digits entered</p>
+                </div>
+
+                <button
+                  type="submit"
+                  className="auth-submit"
+                  disabled={isLoading || code.length < 6}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="auth-spinner" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      Verify &amp; Continue
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+
+                {/* Resend option — calls handleSendCode again on the same email.
+                    We reuse the same function to avoid duplicating the API call logic. */}
+                <p className="auth-resend">
+                  Didn&rsquo;t receive it?{" "}
+                  <button
+                    type="button"
+                    className="auth-switch-btn"
+                    onClick={handleSendCode}
+                    disabled={isLoading}
+                  >
+                    Resend code
+                  </button>
+                </p>
+              </form>
+            </>
+          )}
+
         </div>
       </div>
 
-      {/* ── STYLES ─────────────────────────────────────────── */}
+      {/* ── STYLES ─────────────────────────────────────────────────────────────
+          All styles are scoped inside this component via a <style> tag.
+          We use BEM-inspired class names (auth-*) to avoid conflicts with
+          the rest of the app, which uses Tailwind.
+      */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
 
@@ -332,19 +506,18 @@ export default function AuthPage() {
           -webkit-font-smoothing: antialiased;
         }
 
-        /* ── LEFT ── */
+        /* ── LEFT PANEL ── */
         .auth-left {
           position: relative;
           width: 45%;
           background: #0C0A09;
           display: flex;
           flex-direction: column;
-          padding: 36px 48px 36px;
+          padding: 36px 48px;
           overflow: hidden;
         }
         @media (max-width: 900px) { .auth-left { display: none; } }
 
-        /* subtle dot-grid texture */
         .auth-left-grid {
           position: absolute;
           inset: 0;
@@ -352,7 +525,6 @@ export default function AuthPage() {
           background-size: 28px 28px;
           pointer-events: none;
         }
-        /* orange glow */
         .auth-left::after {
           content: '';
           position: absolute;
@@ -377,8 +549,7 @@ export default function AuthPage() {
           letter-spacing: -0.02em;
         }
         .auth-logo-mark {
-          width: 32px;
-          height: 32px;
+          width: 32px; height: 32px;
           background: #F97316;
           border-radius: 8px;
           display: flex;
@@ -415,10 +586,7 @@ export default function AuthPage() {
           font-style: normal;
           margin-bottom: 20px;
         }
-        .auth-quote em {
-          color: #F97316;
-          font-style: italic;
-        }
+        .auth-quote em { color: #F97316; font-style: italic; }
 
         .auth-left-sub {
           font-size: 0.88rem;
@@ -442,15 +610,8 @@ export default function AuthPage() {
           align-items: center;
           gap: 6px;
         }
-        .auth-stat-num {
-          font-weight: 800;
-          font-size: 0.95rem;
-          color: white;
-        }
-        .auth-stat-label {
-          font-size: 0.75rem;
-          color: rgba(255,255,255,0.4);
-        }
+        .auth-stat-num { font-weight: 800; font-size: 0.95rem; color: white; }
+        .auth-stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
 
         .auth-left-footer {
           position: relative;
@@ -462,7 +623,7 @@ export default function AuthPage() {
           color: rgba(255,255,255,0.28);
         }
 
-        /* ── RIGHT ── */
+        /* ── RIGHT PANEL ── */
         .auth-right {
           flex: 1;
           display: flex;
@@ -477,53 +638,49 @@ export default function AuthPage() {
           max-width: 420px;
         }
 
-        /* Mode tabs */
-        .auth-mode-tabs {
-          display: flex;
-          background: #F5F5F4;
-          border-radius: 999px;
-          padding: 4px;
+        /* Mobile logo — only shows when the left panel is hidden */
+        .auth-mobile-logo {
+          display: none;
+          align-items: center;
+          gap: 9px;
+          font-weight: 800;
+          font-size: 1rem;
+          color: #0C0A09;
+          letter-spacing: -0.02em;
           margin-bottom: 32px;
         }
-        .auth-mode-tab {
-          flex: 1;
-          padding: 9px;
-          border-radius: 999px;
-          border: none;
-          background: transparent;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #78716C;
-          cursor: pointer;
-          transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-        }
-        .auth-mode-tab.active {
-          background: white;
-          color: #0C0A09;
-          box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+        @media (max-width: 900px) { .auth-mobile-logo { display: flex; } }
+
+        /* Error banner */
+        .auth-error {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #FEF2F2;
+          border: 1px solid #FECACA;
+          color: #DC2626;
+          font-size: 0.82rem;
+          font-weight: 500;
+          padding: 10px 14px;
+          border-radius: 10px;
+          margin-bottom: 20px;
         }
 
-        .auth-form-head {
-          margin-bottom: 24px;
-        }
+        .auth-form-head { margin-bottom: 24px; }
         .auth-form-title {
           font-size: 1.55rem;
           font-weight: 800;
           color: #0C0A09;
           letter-spacing: -0.03em;
-          margin-bottom: 5px;
+          margin-bottom: 6px;
         }
-        .auth-form-sub {
-          font-size: 0.85rem;
-          color: #78716C;
-        }
+        .auth-form-sub { font-size: 0.85rem; color: #78716C; line-height: 1.6; }
 
         /* Role toggle */
         .auth-role-toggle {
           display: flex;
           gap: 10px;
-          margin-bottom: 22px;
+          margin-bottom: 24px;
         }
         .auth-role-btn {
           flex: 1;
@@ -554,42 +711,21 @@ export default function AuthPage() {
           flex-direction: column;
           gap: 16px;
         }
-
         .auth-field {
           display: flex;
           flex-direction: column;
           gap: 6px;
         }
-
-        .auth-label-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
         .auth-label {
           font-size: 0.82rem;
           font-weight: 600;
           color: #1C1917;
           letter-spacing: 0.01em;
         }
-
-        .auth-forgot {
-          font-size: 0.78rem;
-          font-weight: 600;
-          color: #F97316;
-          text-decoration: none;
-          transition: opacity 0.15s;
-        }
-        .auth-forgot:hover { opacity: 0.75; }
-
-        .auth-input-wrap {
-          position: relative;
-        }
+        .auth-input-wrap { position: relative; }
         .auth-input-icon {
           position: absolute;
-          left: 14px;
-          top: 50%;
+          left: 14px; top: 50%;
           transform: translateY(-50%);
           color: #A8A29E;
           pointer-events: none;
@@ -609,17 +745,32 @@ export default function AuthPage() {
           outline: none;
         }
         .auth-input.has-icon { padding-left: 42px; }
-        .auth-input.has-toggle { padding-right: 42px; }
+        .auth-input.has-toggle { padding-right: 44px; }
         .auth-input::placeholder { color: #A8A29E; }
         .auth-input:focus {
           border-color: #F97316;
           box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
         }
 
+        /* OTP input — large centered digits */
+        .auth-otp-input {
+          text-align: center;
+          font-size: 1.4rem;
+          font-weight: 800;
+          letter-spacing: 0.22em;
+          padding: 14px 44px 14px 14px;
+          color: #0C0A09;
+        }
+
+        .auth-code-hint {
+          font-size: 0.72rem;
+          color: #A8A29E;
+          font-weight: 500;
+        }
+
         .auth-pw-toggle {
           position: absolute;
-          right: 13px;
-          top: 50%;
+          right: 13px; top: 50%;
           transform: translateY(-50%);
           background: none;
           border: none;
@@ -632,7 +783,32 @@ export default function AuthPage() {
         }
         .auth-pw-toggle:hover { color: #0C0A09; }
 
-        /* Trust badge */
+        /* Email-sent badge shown on step 2 */
+        .auth-email-badge {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #FFF7ED;
+          border: 1px solid #FED7AA;
+          border-radius: 10px;
+          padding: 11px 14px;
+          margin-bottom: 20px;
+          font-size: 0.83rem;
+          font-weight: 600;
+          color: #44403C;
+        }
+        .auth-change-email {
+          margin-left: auto;
+          background: none;
+          border: none;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #F97316;
+          cursor: pointer;
+        }
+
+        /* Trust badge for student emails */
         .auth-trust-badge {
           display: inline-flex;
           align-items: center;
@@ -647,32 +823,7 @@ export default function AuthPage() {
           width: fit-content;
         }
 
-        /* Terms */
-        .auth-terms {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          font-size: 0.8rem;
-          color: #78716C;
-          line-height: 1.55;
-          cursor: pointer;
-        }
-        .auth-checkbox {
-          width: 15px;
-          height: 15px;
-          margin-top: 1px;
-          flex-shrink: 0;
-          accent-color: #F97316;
-          cursor: pointer;
-        }
-        .auth-link {
-          color: #F97316;
-          text-decoration: none;
-          font-weight: 600;
-        }
-        .auth-link:hover { text-decoration: underline; }
-
-        /* Submit */
+        /* Submit button */
         .auth-submit {
           display: flex;
           align-items: center;
@@ -692,12 +843,27 @@ export default function AuthPage() {
           box-shadow: 0 4px 16px rgba(249,115,22,0.28);
           margin-top: 4px;
         }
-        .auth-submit:hover {
+        .auth-submit:hover:not(:disabled) {
           background: #EA580C;
           transform: translateY(-1px);
           box-shadow: 0 8px 24px rgba(249,115,22,0.35);
         }
-        .auth-submit:active { transform: translateY(0); }
+        .auth-submit:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        /* Loading spinner inside the button */
+        .auth-spinner {
+          width: 15px; height: 15px;
+          border: 2px solid rgba(255,255,255,0.35);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: auth-spin 0.7s linear infinite;
+          flex-shrink: 0;
+        }
+        @keyframes auth-spin { to { transform: rotate(360deg); } }
 
         /* Divider */
         .auth-divider {
@@ -708,8 +874,7 @@ export default function AuthPage() {
         .auth-divider::before {
           content: '';
           position: absolute;
-          top: 50%;
-          left: 0; right: 0;
+          top: 50%; left: 0; right: 0;
           height: 1px;
           background: #E7E5E4;
         }
@@ -722,7 +887,7 @@ export default function AuthPage() {
           font-weight: 500;
         }
 
-        /* OAuth */
+        /* OAuth buttons */
         .auth-oauth {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -749,12 +914,12 @@ export default function AuthPage() {
           background: #FAFAFA;
         }
 
-        /* Switch link */
-        .auth-switch {
+        /* Resend + switch links */
+        .auth-resend {
           text-align: center;
-          margin-top: 22px;
           font-size: 0.82rem;
           color: #78716C;
+          margin-top: 4px;
         }
         .auth-switch-btn {
           background: none;
@@ -766,7 +931,8 @@ export default function AuthPage() {
           cursor: pointer;
           transition: opacity 0.15s;
         }
-        .auth-switch-btn:hover { opacity: 0.75; }
+        .auth-switch-btn:hover:not(:disabled) { opacity: 0.75; }
+        .auth-switch-btn:disabled { opacity: 0.45; cursor: not-allowed; }
       `}</style>
     </div>
   );

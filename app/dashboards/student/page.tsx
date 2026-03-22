@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import Link from 'next/link';
 import { revalidatePath } from "next/cache";
 import DeliverButton from "./DeliverButton";
+import EditProfileButton from "./EditProfileButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -318,9 +319,19 @@ export default async function StudentDashboard({
                 </div>
               </div>
               <div style={s.profileCardRight}>
-                <button style={s.editProfileBtn}>
-                  <Icon.Edit /> Edit Profile
-                </button>
+                <EditProfileButton
+                  studentEmail={userEmail}
+                  current={{
+                    full_name:     dbUser.full_name ?? "",
+                    bio:           (dbUser as any).bio ?? "",
+                    major:         (dbUser as any).major ?? "",
+                    cohort:        (dbUser as any).cohort ?? "",
+                    year_of_study: (dbUser as any).year_of_study ?? "",
+                    gpa:           (dbUser as any).gpa?.toString() ?? "",
+                    skills:        dbUser.skills ?? [],
+                    school:        dbUser.school ?? "",
+                  }}
+                />
               </div>
             </div>
           )}

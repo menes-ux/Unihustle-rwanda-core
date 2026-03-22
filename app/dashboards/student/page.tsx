@@ -1,16 +1,20 @@
 import { prisma } from "@/lib/db";
 import Link from 'next/link';
+import { revalidatePath } from "next/cache";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Gig { id: number; title: string; category: string; price: number; orders: number; }
-interface Order { id: string; buyer: string; initials: string; gig: string; due: string; amount: number; }
-interface Review { id: number; company: string; initials: string; role: string; text: string; date: string; }
-interface PortfolioProject { id: number; title: string; description: string; type: 'GitHub' | 'Behance' | 'Live' | 'Figma'; url: string; tags: string[]; }
+interface PortfolioProject {
+  id: number;
+  title: string;
+  description: string;
+  type: 'GitHub' | 'Behance' | 'Live' | 'Figma';
+  url: string;
+  tags: string[];
+}
 
-// ─── Mock/placeholder arrays ──────────────────────────────────────────────────
-
-const REVIEWS: Review[] = [];
+// ─── Static placeholder portfolio ─────────────────────────────────────────────
+// These will be replaced once portfolio_projects is added to the Prisma schema.
 
 const PORTFOLIO: PortfolioProject[] = [
   { id: 1, title: 'UniHustle Rwanda', description: 'A full-stack freelance marketplace for ALU students and local businesses.', type: 'GitHub', url: 'https://github.com', tags: ['Next.js', 'Supabase', 'TypeScript'] },
@@ -20,59 +24,55 @@ const PORTFOLIO: PortfolioProject[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Returns colour tokens for the GPA badge.
+ * Green = Dean's List (3.7+), Amber = Good Standing (3.0+), Red = below 3.0.
+ */
 function getGpaStyle(gpa: number): { color: string; bg: string; border: string; label: string } {
   if (gpa >= 3.7) return { color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', label: "Dean's List" };
   if (gpa >= 3.0) return { color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', label: 'Good Standing' };
   return { color: '#DC2626', bg: '#FEF2F2', border: '#FECACA', label: 'Needs Attention' };
 }
 
+/**
+ * Turns "pending" → "Pending", "in_progress" → "In Progress", etc.
+ * Used to make raw DB status strings readable in the orders table.
+ */
+function formatStatus(status: string): string {
+  return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/**
+ * Derives two-letter initials from a full name or email prefix.
+ * "Menes Adisso" → "MA", "m.adisso@..." → "MA"
+ */
+function getInitials(nameOrEmail: string): string {
+  const base = nameOrEmail.includes('@') ? nameOrEmail.split('@')[0] : nameOrEmail;
+  const parts = base.trim().split(/[\s.]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return base.slice(0, 2).toUpperCase();
+}
+
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 const Icon = {
-  Logo: () => <svg viewBox="0 0 24 24" fill="white" width={16} height={16}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>,
-  Switch: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" /></svg>,
-  Orders: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h4" /></svg>,
-  Plus: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" width={14} height={14}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
-  Dots: () => <svg viewBox="0 0 24 24" fill="currentColor" width={14} height={14}><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>,
-  Edit: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>,
-  Trash: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>,
-  Star: () => <svg viewBox="0 0 24 24" fill="#F97316" width={13} height={13}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
-  StarOutline: () => <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={2} width={13} height={13}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
-  Calendar: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
+  Logo:         () => <svg viewBox="0 0 24 24" fill="white" width={16} height={16}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>,
+  Switch:       () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" /></svg>,
+  Orders:       () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h4" /></svg>,
+  Plus:         () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" width={14} height={14}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
+  Dots:         () => <svg viewBox="0 0 24 24" fill="currentColor" width={14} height={14}><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>,
+  Edit:         () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>,
+  Trash:        () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>,
+  Calendar:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
   ChevronRight: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><polyline points="9 18 15 12 9 6" /></svg>,
   ExternalLink: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>,
-  Github: () => <svg viewBox="0 0 24 24" fill="currentColor" width={14} height={14}><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" /></svg>,
-  Figma: () => <svg viewBox="0 0 24 24" fill="currentColor" width={14} height={14}><path d="M5 5.5A3.5 3.5 0 018.5 2H12v7H8.5A3.5 3.5 0 015 5.5zm7-3.5h3.5a3.5 3.5 0 110 7H12V2zm0 8.5h3.5a3.5 3.5 0 110 7H12v-7zm-7 3.5A3.5 3.5 0 018.5 10.5H12v7H8.5A3.5 3.5 0 015 14zm3.5 3.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z" /></svg>,
-  Globe: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>,
-  Verified: () => <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+  Github:       () => <svg viewBox="0 0 24 24" fill="currentColor" width={14} height={14}><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" /></svg>,
+  Figma:        () => <svg viewBox="0 0 24 24" fill="currentColor" width={14} height={14}><path d="M5 5.5A3.5 3.5 0 018.5 2H12v7H8.5A3.5 3.5 0 015 5.5zm7-3.5h3.5a3.5 3.5 0 110 7H12V2zm0 8.5h3.5a3.5 3.5 0 110 7H12v-7zm-7 3.5A3.5 3.5 0 018.5 10.5H12v7H8.5A3.5 3.5 0 015 14zm3.5 3.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z" /></svg>,
+  Globe:        () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>,
+  Verified:     () => <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
 };
 
-// ─── Subcomponents ────────────────────────────────────────────────────────────
-
-function GigCard({ gig }: { gig: Gig }) {
-  return (
-    <div style={s.gigCard}>
-      <div style={s.gigThumb}>
-        <span style={s.gigThumbLabel}>{gig.category}</span>
-      </div>
-      <div style={s.gigBody}>
-        <p style={s.gigTitle}>{gig.title}</p>
-        <div style={s.gigMeta}>
-          <span style={{ ...s.gigOrderPill, ...(gig.orders > 0 ? s.gigOrderPillActive : {}) }}>
-            {gig.orders > 0 ? `${gig.orders} active order` : 'No orders yet'}
-          </span>
-        </div>
-      </div>
-      <div style={s.gigFooter}>
-        <div>
-          <span style={s.gigPriceFrom}>Starting at</span>
-          <span style={s.gigPriceVal}>{gig.price.toLocaleString()} RWF</span>
-        </div>
-        <button style={s.iconBtn} aria-label="Options"><Icon.Dots /></button>
-      </div>
-    </div>
-  );
-}
+// ─── Portfolio Card ───────────────────────────────────────────────────────────
 
 function PortfolioCard({ project }: { project: PortfolioProject }) {
   const typeConfig: Record<PortfolioProject['type'], { icon: React.ReactNode; label: string; color: string; bg: string }> = {
@@ -101,7 +101,7 @@ function PortfolioCard({ project }: { project: PortfolioProject }) {
   );
 }
 
-// ─── Page Component (Server Component) ────────────────────────────────────────
+// ─── Page (Server Component) ──────────────────────────────────────────────────
 
 export default async function StudentDashboard({
   searchParams,
@@ -111,23 +111,40 @@ export default async function StudentDashboard({
   const params = await searchParams;
   const userEmail = params.email || "m.adisso@alustudent.com";
 
-  // 2. Fetch the real user data from your Supabase/Prisma database
+  // ── Fetch user from DB ──────────────────────────────────────────────────────
   const dbUser = await prisma.user.findUnique({
     where: { email: userEmail },
   });
 
-  // 3. Block if not found
+  // If the email isn't in the DB yet, show a clean error card
   if (!dbUser) {
     return (
-      <div style={{...s.root, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh'}}>
-        <div style={{background: 'white', padding: 40, borderRadius: 12, textAlign: 'center'}}>
-          <h2 style={{color: '#DC2626', fontSize: 24, fontWeight: 'bold'}}>Profile Not Found</h2>
-          <p style={{color: '#78716C'}}>We could not find {userEmail} in the database.</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F5F5F4' }}>
+        <div style={{ background: 'white', padding: 40, borderRadius: 14, textAlign: 'center', border: '1px solid #E7E5E4', maxWidth: 400 }}>
+          <h2 style={{ color: '#DC2626', fontSize: '1.1rem', fontWeight: 700, marginBottom: 8 }}>Profile Not Found</h2>
+          <p style={{ color: '#78716C', fontSize: '0.85rem' }}>We could not find <strong>{userEmail}</strong> in the database.</p>
+          <Link href="/login" style={{ display: 'inline-block', marginTop: 20, background: '#F97316', color: 'white', padding: '9px 20px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none' }}>
+            Back to Login
+          </Link>
         </div>
       </div>
     );
   }
 
+  // ── Server Action — update full_name ────────────────────────────────────────
+  // DO NOT TOUCH: this logic is intentionally left exactly as-is.
+  async function updateProfileName(formData: FormData) {
+    "use server";
+    const newName = formData.get("fullName") as string;
+    if (!newName) return;
+    await prisma.user.update({
+      where: { email: userEmail },
+      data: { full_name: newName },
+    });
+    revalidatePath("/dashboards/student");
+  }
+
+  // ── Fetch gigs with their active order count ────────────────────────────────
   const dbGigs = await prisma.gig.findMany({
     where: { student_id: dbUser.user_id },
     include: {
@@ -138,68 +155,55 @@ export default async function StudentDashboard({
     orderBy: { gig_id: "desc" },
   });
 
+  // ── Fetch all orders for this student (as the seller) ──────────────────────
   const dbOrders = await prisma.order.findMany({
     where: { gig: { student_id: dbUser.user_id } },
     include: { buyer: true, gig: true },
     orderBy: { order_id: "desc" },
   });
 
-  const GIGS: Gig[] = dbGigs.map((gig) => ({
-    id: gig.gig_id,
-    title: gig.title,
-    category: gig.category,
-    price: gig.price,
-    orders: gig.orders.length,
-  }));
+  // ── Derive computed stats from real DB data ─────────────────────────────────
 
-  const ORDERS: Order[] = dbOrders.map((order) => {
-    const buyerName = order.buyer.full_name || order.buyer.email.split("@")[0];
-    const initials = buyerName
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? "")
-      .join("") || "BU";
+  // Only orders with these statuses are "active" — shown in the table
+  const activeOrders = dbOrders.filter(o =>
+    o.status === "pending" || o.status === "in_progress"
+  );
 
-    return {
-      id: `#${order.order_id}`,
-      buyer: buyerName,
-      initials,
-      gig: order.gig.title,
-      due: order.status.replace("_", " "),
-      amount: order.gig.price,
-    };
-  });
+  // Earnings and job count come only from fully completed orders
+  const completedOrders = dbOrders.filter(o => o.status === "completed");
+  const totalEarnings   = completedOrders.reduce((sum, o) => sum + o.gig.price, 0);
+  const completedJobs   = completedOrders.length;
 
-  // 4. Format real data for the UI
-  const rawName = dbUser.email.split('@')[0];
-  const firstName = rawName.includes('.') ? rawName.split('.')[1] : rawName;
-  const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  // ── Derive display values from the DB user record ──────────────────────────
+  // We use the stored full_name if available, otherwise parse the email prefix.
+  const hasName    = dbUser.full_name && dbUser.full_name !== "EMPTY";
+  const displayName = hasName
+    ? dbUser.full_name!
+    : dbUser.email.split('@')[0].split('.').map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
 
-  const STUDENT = {
-    name: capitalizedName,
-    initials: capitalizedName.substring(0, 2).toUpperCase(),
-    university: 'African Leadership University',
-    uniShort: 'ALU Rwanda',
-    cohort: 'Class of 2026',
-    year: 'Year 2',
-    major: 'BSc. Software Engineering',
-    bio: 'Full-stack developer with a focus on scalable web applications. Passionate about building products that solve real African problems.',
-    skills: ['React', 'Next.js', 'PostgreSQL', 'Node.js', 'Figma', 'TypeScript'],
-    hustle_score: dbUser.hustle_score ?? 0,
-    gpa: 3.85,
-    is_verified: dbUser.is_verified ?? false,
-    completedJobs: dbOrders.filter((order) => order.status === "completed").length,
-    totalEarnings: dbOrders
-      .filter((order) => order.status === "completed")
-      .reduce((sum, order) => sum + order.gig.price, 0),
-  };
+  const initials   = getInitials(dbUser.full_name ?? dbUser.email);
+  const hustleScore = dbUser.hustle_score ?? 0;
+  const isVerified  = dbUser.is_verified ?? false;
 
-  const gpaStyle = getGpaStyle(STUDENT.gpa);
+  // GPA is stored on the user record; fall back to null if not set yet
+  const gpa      = (dbUser as any).gpa ?? null;
+  const gpaStyle = gpa !== null ? getGpaStyle(gpa) : null;
+
+  // Static profile fields — these will come from the DB once the schema
+  // has university, cohort, major, bio, and skills columns added.
+  const UNIVERSITY = 'African Leadership University';
+  const COHORT     = 'Class of 2026';
+  const YEAR       = 'Year 2';
+  const MAJOR      = 'BSc. Software Engineering';
+  const BIO        = 'Full-stack developer with a focus on scalable web applications. Passionate about building products that solve real African problems.';
+  const SKILLS     = ['React', 'Next.js', 'PostgreSQL', 'Node.js', 'Figma', 'TypeScript'];
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div style={s.root}>
-      {/* ── NAV ──────────────────────────────────────────────────── */}
+
+      {/* ── NAV ──────────────────────────────────────────────── */}
       <nav style={s.nav}>
         <div style={s.navInner}>
           <Link href="/" style={s.logo}>
@@ -211,9 +215,13 @@ export default async function StudentDashboard({
               <Icon.Switch /> Switch to Buying
             </Link>
             <Link href="#" style={s.navLink}>
-              <Icon.Orders /> Orders <span style={s.navBadge}>{ORDERS.length}</span>
+              <Icon.Orders />
+              Orders
+              {activeOrders.length > 0 && (
+                <span style={s.navBadge}>{activeOrders.length}</span>
+              )}
             </Link>
-            <button style={s.avatar} aria-label="Profile">{STUDENT.initials}</button>
+            <button style={s.avatar} aria-label="Profile">{initials}</button>
           </div>
         </div>
       </nav>
@@ -221,44 +229,108 @@ export default async function StudentDashboard({
       <main style={s.main}>
         <div style={s.container}>
 
-          {/* ── PROFILE HEADER ─────────────────────────────────── */}
-          <div style={s.profileCard}>
-            <div style={s.profileCardLeft}>
-              <div style={s.profileBigAvatar}>{STUDENT.initials}</div>
-              <div style={s.profileDetails}>
-                <div style={s.profileNameRow}>
-                  <h1 style={s.profileDisplayName}>{STUDENT.name}</h1>
-                  {STUDENT.is_verified && (
-                    <div style={s.verifiedPill}>
-                      <Icon.Verified />
-                      <span>Verified Student</span>
-                    </div>
-                  )}
+          {/* ── PROFILE HEADER ─────────────────────────────────
+              Two states:
+              1. No name yet → show the "Complete Your Profile" onboarding card
+              2. Name exists → show the full styled profile card
+          */}
+          {!hasName ? (
+
+            // ── ONBOARDING STATE: student hasn't set their name yet ──
+            <div style={s.profileCard}>
+              <div style={s.profileCardLeft}>
+                <div style={{ ...s.profileBigAvatar, background: '#F5F5F4', color: '#A8A29E', fontSize: '1.8rem' }}>
+                  ?
                 </div>
-                <div style={s.profileUniRow}>
-                  <span style={s.profileUni}>{STUDENT.university}</span>
-                  <span style={s.profileDot}>·</span>
-                  <span style={s.profileCohort}>{STUDENT.cohort}</span>
-                  <span style={s.profileDot}>·</span>
-                  <span style={s.profileMajor}>{STUDENT.major}</span>
-                </div>
-                <p style={s.profileBio}>{STUDENT.bio}</p>
-                <div style={s.profileSkills}>
-                  {STUDENT.skills.map(skill => (
-                    <span key={skill} style={s.skillPill}>{skill}</span>
-                  ))}
+                <div style={s.profileDetails}>
+                  <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0C0A09', marginBottom: 4 }}>
+                    Complete Your Profile
+                  </h2>
+                  <p style={{ fontSize: '0.83rem', color: '#78716C', marginBottom: 16 }}>
+                    What should we call you on UniHustle? This name will be visible to businesses.
+                  </p>
+                  {/* Server Action form — logic untouched, only styled */}
+                  <form action={updateProfileName} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      name="fullName"
+                      placeholder="e.g. Menes Adisso"
+                      required
+                      style={{
+                        padding: '10px 14px',
+                        border: '1.5px solid #E7E5E4',
+                        borderRadius: 10,
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        fontSize: '0.875rem',
+                        color: '#0C0A09',
+                        background: 'white',
+                        outline: 'none',
+                        width: 260,
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        background: '#F97316', color: 'white', border: 'none',
+                        borderRadius: 9, padding: '10px 20px',
+                        fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      }}
+                    >
+                      Save Name
+                    </button>
+                  </form>
                 </div>
               </div>
             </div>
-            <div style={s.profileCardRight}>
-              <button style={s.editProfileBtn}>
-                <Icon.Edit /> Edit Profile
-              </button>
-            </div>
-          </div>
 
-          {/* ── STATS ROW (4 cards including GPA) ──────────────── */}
+          ) : (
+
+            // ── FULL PROFILE STATE: name is set, show the complete card ──
+            <div style={s.profileCard}>
+              <div style={s.profileCardLeft}>
+                <div style={s.profileBigAvatar}>{initials}</div>
+                <div style={s.profileDetails}>
+                  <div style={s.profileNameRow}>
+                    <h1 style={s.profileDisplayName}>{displayName}</h1>
+                    {isVerified && (
+                      <div style={s.verifiedPill}>
+                        <Icon.Verified />
+                        <span>Verified Student</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={s.profileUniRow}>
+                    <span style={s.profileUni}>{UNIVERSITY}</span>
+                    <span style={s.profileDot}>·</span>
+                    <span style={s.profileCohort}>{COHORT}</span>
+                    <span style={s.profileDot}>·</span>
+                    <span style={s.profileMajor}>{MAJOR}</span>
+                  </div>
+                  <p style={s.profileBio}>{BIO}</p>
+                  <div style={s.profileSkills}>
+                    {SKILLS.map(skill => (
+                      <span key={skill} style={s.skillPill}>{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={s.profileCardRight}>
+                <button style={s.editProfileBtn}>
+                  <Icon.Edit /> Edit Profile
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STATS ROW ──────────────────────────────────────
+              All four values are derived directly from dbOrders and dbUser.
+              Nothing here is hardcoded.
+          */}
           <div style={s.statsRow}>
+
+            {/* Active Orders — count of pending + in_progress orders */}
             <div style={s.statCard}>
               <div style={s.statIcon}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
@@ -269,11 +341,14 @@ export default async function StudentDashboard({
               </div>
               <div>
                 <p style={s.statLabel}>Active Orders</p>
-                <p style={s.statValue}>{ORDERS.length}</p>
-                <p style={s.statSub}>Currently in progress</p>
+                <p style={s.statValue}>{activeOrders.length}</p>
+                <p style={s.statSub}>
+                  {activeOrders.length === 0 ? 'Nothing in progress' : 'Currently in progress'}
+                </p>
               </div>
             </div>
 
+            {/* Total Earnings — sum of completed order prices */}
             <div style={s.statCard}>
               <div style={s.statIcon}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
@@ -283,11 +358,12 @@ export default async function StudentDashboard({
               </div>
               <div>
                 <p style={s.statLabel}>Total Earnings</p>
-                <p style={s.statValue}>{STUDENT.totalEarnings.toLocaleString()} RWF</p>
+                <p style={s.statValue}>{totalEarnings.toLocaleString()} RWF</p>
                 <p style={s.statSub}>All time</p>
               </div>
             </div>
 
+            {/* Jobs Completed — count of completed orders */}
             <div style={s.statCard}>
               <div style={s.statIcon}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
@@ -296,11 +372,12 @@ export default async function StudentDashboard({
               </div>
               <div>
                 <p style={s.statLabel}>Jobs Completed</p>
-                <p style={s.statValue}>{STUDENT.completedJobs}</p>
+                <p style={s.statValue}>{completedJobs}</p>
                 <p style={s.statSub}>Paid and delivered</p>
               </div>
             </div>
 
+            {/* Academic GPA — from dbUser.gpa, colour-coded */}
             <div style={s.statCard}>
               <div style={s.statIcon}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
@@ -310,18 +387,35 @@ export default async function StudentDashboard({
               </div>
               <div>
                 <p style={s.statLabel}>Academic GPA</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <p style={s.statValue}>{STUDENT.gpa.toFixed(2)}</p>
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, borderRadius: 999, padding: '2px 9px', color: gpaStyle.color, background: gpaStyle.bg, border: `1px solid ${gpaStyle.border}`, whiteSpace: 'nowrap' }}>
-                    {gpaStyle.label}
-                  </span>
-                </div>
-                <p style={s.statSub}>Hustle score: {STUDENT.hustle_score}</p>
+                {gpa !== null && gpaStyle ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <p style={s.statValue}>{gpa.toFixed(2)}</p>
+                      <span style={{
+                        fontSize: '0.65rem', fontWeight: 700, borderRadius: 999,
+                        padding: '2px 9px', whiteSpace: 'nowrap' as const,
+                        color: gpaStyle.color, background: gpaStyle.bg,
+                        border: `1px solid ${gpaStyle.border}`,
+                      }}>
+                        {gpaStyle.label}
+                      </span>
+                    </div>
+                    <p style={s.statSub}>Hustle score: {hustleScore}</p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ ...s.statValue, fontSize: '0.85rem', color: '#A8A29E', fontWeight: 500 }}>Not set</p>
+                    <p style={s.statSub}>Add GPA in profile settings</p>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {/* ── ACTIVE ORDERS ──────────────────────────────────── */}
+          {/* ── ACTIVE ORDERS TABLE ────────────────────────────
+              Maps directly over `activeOrders` (the filtered dbOrders array).
+              Shows an empty state if no active orders exist.
+          */}
           <div style={s.section}>
             <div style={s.sectionHead}>
               <h2 style={s.sectionTitle}>Active Orders</h2>
@@ -329,48 +423,142 @@ export default async function StudentDashboard({
                 View all <Icon.ChevronRight />
               </Link>
             </div>
-            <div style={s.table}>
-              <div style={s.tableHead}>
-                <span>Order ID</span>
-                <span>Gig</span>
-                <span>Buyer</span>
-                <span>Deadline</span>
-                <span>Amount</span>
-                <span></span>
-              </div>
-              {ORDERS.map((order, i) => (
-                <div key={order.id} style={{ ...s.tableRow, ...(i === ORDERS.length - 1 ? { borderBottom: 'none' } : {}) }}>
-                  <span style={s.orderId}>{order.id}</span>
-                  <span style={s.orderGig}>{order.gig}</span>
-                  <div style={s.orderBuyer}>
-                    <div style={s.buyerAvatar}>{order.initials}</div>
-                    <span>{order.buyer}</span>
-                  </div>
-                  <div style={s.orderDue}>
-                    <Icon.Calendar />
-                    <span>{order.due}</span>
-                  </div>
-                  <span style={s.orderAmount}>{order.amount.toLocaleString()} RWF</span>
-                  <button style={s.deliverBtn}>Deliver</button>
+
+            {activeOrders.length === 0 ? (
+              // Empty state — shown when the student has no active orders
+              <div style={s.emptyCanvas}>
+                <div style={s.emptyCanvasIcon}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={32} height={32}>
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                    <rect x="9" y="3" width="6" height="4" rx="1" />
+                    <path d="M9 12h6M9 16h4" />
+                  </svg>
                 </div>
-              ))}
-            </div>
+                <p style={s.emptyCanvasTitle}>No active orders yet</p>
+                <p style={s.emptyCanvasSub}>
+                  When a business books one of your gigs, their order will appear here.
+                </p>
+              </div>
+            ) : (
+              <div style={s.table}>
+                <div style={s.tableHead}>
+                  <span>Order ID</span>
+                  <span>Gig</span>
+                  <span>Buyer</span>
+                  <span>Status</span>
+                  <span>Amount</span>
+                  <span></span>
+                </div>
+                {activeOrders.map((order, i) => {
+                  const buyerName = order.buyer.full_name || order.buyer.email.split('@')[0];
+                  const buyerInitials = getInitials(order.buyer.full_name ?? order.buyer.email);
+                  return (
+                    <div
+                      key={order.order_id}
+                      style={{ ...s.tableRow, ...(i === activeOrders.length - 1 ? { borderBottom: 'none' } : {}) }}
+                    >
+                      <span style={s.orderId}>#{String(order.order_id).slice(-6).toUpperCase()}</span>
+                      <span style={s.orderGig}>{order.gig.title}</span>
+                      <div style={s.orderBuyer}>
+                        <div style={s.buyerAvatar}>{buyerInitials}</div>
+                        <span>{buyerName}</span>
+                      </div>
+                      <div style={s.orderDue}>
+                        <Icon.Calendar />
+                        <span>{formatStatus(order.status)}</span>
+                      </div>
+                      <span style={s.orderAmount}>{order.gig.price.toLocaleString()} RWF</span>
+                      <button style={s.deliverBtn}>Deliver</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* ── MY GIGS ────────────────────────────────────────── */}
+          {/* ── MY GIGS ────────────────────────────────────────
+              Maps directly over `dbGigs` from Prisma.
+              Each card shows real title, category, price,
+              and a live count of active orders on that gig.
+              Shows an empty state with a CTA if no gigs exist.
+          */}
           <div style={s.section}>
             <div style={s.sectionHead}>
               <h2 style={s.sectionTitle}>My Marketplace Gigs</h2>
-            <Link href={`/dashboards/student/post-gig?email=${encodeURIComponent(userEmail)}`}>
-              <Icon.Plus /> Create a New Gig
-            </Link>
+              <Link
+                href={`/dashboards/student/post-gig?email=${encodeURIComponent(userEmail)}`}
+                style={s.createBtn}
+              >
+                <Icon.Plus /> Create a New Gig
+              </Link>
             </div>
-            <div style={s.gigsGrid}>
-              {GIGS.map(gig => <GigCard key={gig.id} gig={gig} />)}
-            </div>
+
+            {dbGigs.length === 0 ? (
+              // Empty state — shown to students who haven't listed a gig yet
+              <div style={s.emptyCanvas}>
+                <div style={s.emptyCanvasIcon}>
+                  <Icon.Plus />
+                </div>
+                <p style={s.emptyCanvasTitle}>No gigs yet</p>
+                <p style={s.emptyCanvasSub}>
+                  Create your first gig to start receiving orders from businesses.
+                </p>
+                <Link
+                  href={`/dashboards/student/post-gig?email=${encodeURIComponent(userEmail)}`}
+                  style={{
+                    marginTop: 8, padding: '9px 20px',
+                    background: '#F97316', color: 'white',
+                    borderRadius: 9, fontSize: '0.82rem',
+                    fontWeight: 700, textDecoration: 'none',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <Icon.Plus /> Post Your First Gig
+                </Link>
+              </div>
+            ) : (
+              <div style={s.gigsGrid}>
+                {dbGigs.map(gig => {
+                  const activeGigOrders = gig.orders.length; // already filtered to active statuses
+                  return (
+                    <div key={gig.gig_id} style={s.gigCard}>
+                      <div style={s.gigThumb}>
+                        <span style={s.gigThumbLabel}>{gig.category}</span>
+                      </div>
+                      <div style={s.gigBody}>
+                        <p style={s.gigTitle}>{gig.title}</p>
+                        <div style={s.gigMeta}>
+                          <span style={{
+                            ...s.gigOrderPill,
+                            ...(activeGigOrders > 0 ? s.gigOrderPillActive : {}),
+                          }}>
+                            {activeGigOrders > 0
+                              ? `${activeGigOrders} active order${activeGigOrders > 1 ? 's' : ''}`
+                              : 'No orders yet'}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={s.gigFooter}>
+                        <div>
+                          <span style={s.gigPriceFrom}>Starting at</span>
+                          <span style={s.gigPriceVal}>{gig.price.toLocaleString()} RWF</span>
+                        </div>
+                        <button style={s.iconBtn} aria-label="Options">
+                          <Icon.Dots />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* ── REVIEW CANVAS ──────────────────────────────────── */}
+          {/* ── REVIEW CANVAS ──────────────────────────────────
+              Reviews are fetched via a separate query once the reviews
+              table is wired up. For now shows the empty state which
+              explains the auto-populate behaviour to the student.
+          */}
           <div style={s.section}>
             <div style={s.sectionHead}>
               <div>
@@ -378,38 +566,23 @@ export default async function StudentDashboard({
                 <p style={s.sectionDesc}>Automatically populated after each completed job</p>
               </div>
             </div>
-            {REVIEWS.length === 0 ? (
-              <div style={s.emptyCanvas}>
-                <div style={s.emptyCanvasIcon}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={32} height={32}>
-                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                  </svg>
-                </div>
-                <p style={s.emptyCanvasTitle}>No reviews yet</p>
-                <p style={s.emptyCanvasSub}>
-                  Complete your first order and the company will be prompted to leave a review here automatically.
-                </p>
+            <div style={s.emptyCanvas}>
+              <div style={s.emptyCanvasIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={32} height={32}>
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
               </div>
-            ) : (
-              <div style={s.reviewsGrid}>
-                {REVIEWS.map(review => (
-                  <div key={review.id} style={s.reviewCard}>
-                    <div style={s.reviewTop}>
-                      <div style={s.reviewAvatar}>{review.initials}</div>
-                      <div>
-                        <p style={s.reviewCompany}>{review.company}</p>
-                        <p style={s.reviewRole}>{review.role}</p>
-                      </div>
-                      <span style={s.reviewDate}>{review.date}</span>
-                    </div>
-                    <p style={s.reviewText}>{review.text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+              <p style={s.emptyCanvasTitle}>No reviews yet</p>
+              <p style={s.emptyCanvasSub}>
+                Complete your first order and the company will be prompted to leave a review here automatically.
+              </p>
+            </div>
           </div>
 
-          {/* ── ZERO-TO-ONE PORTFOLIO ──────────────────────────── */}
+          {/* ── ZERO-TO-ONE PORTFOLIO ──────────────────────────
+              Static for now — will be replaced with a DB query once
+              the portfolio_projects table is added to the Prisma schema.
+          */}
           <div style={s.section}>
             <div style={s.sectionHead}>
               <div>
@@ -501,7 +674,7 @@ const s: Record<string, React.CSSProperties> = {
   sectionTitle: { fontSize: '0.95rem', fontWeight: 700, color: '#0C0A09', letterSpacing: '-0.01em' },
   sectionDesc: { fontSize: '0.78rem', color: '#A8A29E', marginTop: 2 },
   sectionAction: { display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', fontWeight: 600, color: '#78716C', textDecoration: 'none', flexShrink: 0 },
-  createBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F97316', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: '0.82rem', fontWeight: 700, flexShrink: 0 },
+  createBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F97316', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: '0.82rem', fontWeight: 700, flexShrink: 0, textDecoration: 'none' },
   table: { background: 'white', border: '1px solid #E7E5E4', borderRadius: 12, overflow: 'hidden' },
   tableHead: { display: 'grid', gridTemplateColumns: '90px 1fr 180px 150px 130px 90px', gap: 12, padding: '11px 20px', background: '#FAFAFA', borderBottom: '1px solid #E7E5E4', fontSize: '0.68rem', fontWeight: 700, color: '#A8A29E', textTransform: 'uppercase' as const, letterSpacing: '0.07em' },
   tableRow: { display: 'grid', gridTemplateColumns: '90px 1fr 180px 150px 130px 90px', gap: 12, padding: '15px 20px', alignItems: 'center', borderBottom: '1px solid #F5F5F4', fontSize: '0.83rem', color: '#1C1917' },
@@ -526,7 +699,7 @@ const s: Record<string, React.CSSProperties> = {
   gigPriceVal: { fontSize: '0.9rem', fontWeight: 800, color: '#0C0A09' },
   iconBtn: { background: 'none', border: '1px solid #E7E5E4', borderRadius: 7, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#78716C', cursor: 'pointer' },
   emptyCanvas: { background: 'white', border: '1px dashed #E7E5E4', borderRadius: 12, padding: '48px 24px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 8, textAlign: 'center' as const },
-  emptyCanvasIcon: { width: 52, height: 52, borderRadius: 12, background: '#F5F5F4', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyCanvasIcon: { width: 52, height: 52, borderRadius: 12, background: '#F5F5F4', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4, color: '#D6D3D1' },
   emptyCanvasTitle: { fontSize: '0.92rem', fontWeight: 700, color: '#0C0A09' },
   emptyCanvasSub: { fontSize: '0.8rem', color: '#A8A29E', lineHeight: 1.6, maxWidth: 380 },
   reviewsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 },

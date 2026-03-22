@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import Link from 'next/link';
 import { revalidatePath } from "next/cache";
+import DeliverButton from "./DeliverButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -468,7 +469,7 @@ export default async function StudentDashboard({
                         <span>{formatStatus(order.status)}</span>
                       </div>
                       <span style={s.orderAmount}>{order.gig.price.toLocaleString()} RWF</span>
-                      <button style={s.deliverBtn}>Deliver</button>
+                      <DeliverButton orderId={order.order_id} studentEmail={userEmail} />
                     </div>
                   );
                 })}

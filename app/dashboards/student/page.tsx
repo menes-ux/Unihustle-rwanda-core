@@ -554,3 +554,78 @@ export default async function StudentDashboard({
             )}
           </div>
 
+{/* ── REVIEW CANVAS ──────────────────────────────────
+              Reviews are fetched via a separate query once the reviews
+              table is wired up. For now shows the empty state which
+              explains the auto-populate behaviour to the student.
+          */}
+          <div style={s.section}>
+            <div style={s.sectionHead}>
+              <div>
+                <h2 style={s.sectionTitle}>Reviews from Companies</h2>
+                <p style={s.sectionDesc}>Automatically populated after each completed job</p>
+              </div>
+            </div>
+            <div style={s.emptyCanvas}>
+              <div style={s.emptyCanvasIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={32} height={32}>
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
+              </div>
+              <p style={s.emptyCanvasTitle}>No reviews yet</p>
+              <p style={s.emptyCanvasSub}>
+                Complete your first order and the company will be prompted to leave a review here automatically.
+              </p>
+            </div>
+          </div>
+
+          {/* ── ZERO-TO-ONE PORTFOLIO ──────────────────────────
+              Static for now — will be replaced with a DB query once
+              the portfolio_projects table is added to the Prisma schema.
+          */}
+          <div style={s.section}>
+            <div style={s.sectionHead}>
+              <div>
+                <h2 style={s.sectionTitle}>Zero-to-One Portfolio</h2>
+                <p style={s.sectionDesc}>Personal projects, repos, and designs — visible to businesses even before your first review</p>
+              </div>
+              <button style={s.createBtn}>
+                <Icon.Plus /> Add Project
+              </button>
+            </div>
+            <div style={s.portfolioGrid}>
+              {PORTFOLIO.map(project => (
+                <PortfolioCard key={project.id} project={project} />
+              ))}
+              <button style={s.portfolioAddCard}>
+                <div style={s.portfolioAddIcon}><Icon.Plus /></div>
+                <p style={s.portfolioAddText}>Add a project</p>
+                <p style={s.portfolioAddSub}>GitHub, Behance, Figma, or a live link</p>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F5F5F4; }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; }
+        @media (max-width: 1100px) { .stats-row { grid-template-columns: repeat(2,1fr) !important; } }
+        @media (max-width: 960px) {
+          .gigs-grid { grid-template-columns: 1fr 1fr !important; }
+          .portfolio-grid { grid-template-columns: 1fr 1fr !important; }
+          .table-head { display: none !important; }
+        }
+        @media (max-width: 640px) {
+          .stats-row { grid-template-columns: 1fr !important; }
+          .gigs-grid { grid-template-columns: 1fr !important; }
+          .portfolio-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </div>
+  );
+}

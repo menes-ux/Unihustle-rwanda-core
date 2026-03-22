@@ -323,3 +323,43 @@ export default async function StudentDashboard({
               </div>
             </div>
           )}
+
+{/* ── STATS ROW ──────────────────────────────────────
+              All four values are derived directly from dbOrders and dbUser.
+              Nothing here is hardcoded.
+          */}
+          <div style={s.statsRow}>
+
+            {/* Active Orders — count of pending + in_progress orders */}
+            <div style={s.statCard}>
+              <div style={s.statIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                  <rect x="9" y="3" width="6" height="4" rx="1" />
+                  <path d="M9 12h6M9 16h4" />
+                </svg>
+              </div>
+              <div>
+                <p style={s.statLabel}>Active Orders</p>
+                <p style={s.statValue}>{activeOrders.length}</p>
+                <p style={s.statSub}>
+                  {activeOrders.length === 0 ? 'Nothing in progress' : 'Currently in progress'}
+                </p>
+              </div>
+            </div>
+
+            {/* Total Earnings — sum of completed order prices */}
+            <div style={s.statCard}>
+              <div style={s.statIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                </svg>
+              </div>
+              <div>
+                <p style={s.statLabel}>Total Earnings</p>
+                <p style={s.statValue}>{totalEarnings.toLocaleString()} RWF</p>
+                <p style={s.statSub}>All time</p>
+              </div>
+            </div>
+

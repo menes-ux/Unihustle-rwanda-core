@@ -100,3 +100,15 @@ function PortfolioCard({ project }: { project: PortfolioProject }) {
     </div>
   );
 }
+
+// ─── Page (Server Component) ──────────────────────────────────────────────────
+
+export default async function StudentDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
+  const params = await searchParams;
+  const userEmail = params.email || "m.adisso@alustudent.com";
+
+  

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import DeliverButton from "./DeliverButton";
 import EditProfileButton from "./EditProfileButton";
 import PortfolioSection from "./PortfolioSection";
+import ReviewsSection from "./ReviewsSection";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -161,6 +162,21 @@ export default async function StudentDashboard({
     where: { student_id: dbUser.user_id },
     orderBy: { portfolio_id: "desc" },
   });
+
+  // ── Fetch reviews for this student ──────────────────────────────────────────
+  const dbReviews = await prisma.review.findMany({
+    where: { student_id: dbUser.user_id },
+    include: {
+      reviewer: true, // the business that left the review
+      gig:      true, // which gig it was for
+    },
+    orderBy: { review_id: "desc" },
+  });
+
+  // Calculate the average rating once, pass it as a prop
+  const avgRating = dbReviews.length > 0
+    ? dbReviews.reduce((sum, r) => sum + r.rating, 0) / dbReviews.length
+    : undefined;
 
   // ── Derive computed stats from real DB data ─────────────────────────────────
 
@@ -565,28 +581,28 @@ export default async function StudentDashboard({
           </div>
 
           {/* ── REVIEW CANVAS ──────────────────────────────────
-              Reviews are fetched via a separate query once the reviews
-              table is wired up. For now shows the empty state which
-              explains the auto-populate behaviour to the student.
+              Dynamically populated from reviews in the database.
           */}
           <div style={s.section}>
-            <div style={s.sectionHead}>
-              <div>
-                <h2 style={s.sectionTitle}>Reviews from Companies</h2>
-                <p style={s.sectionDesc}>Automatically populated after each completed job</p>
-              </div>
-            </div>
-            <div style={s.emptyCanvas}>
-              <div style={s.emptyCanvasIcon}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={32} height={32}>
-                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                </svg>
-              </div>
-              <p style={s.emptyCanvasTitle}>No reviews yet</p>
-              <p style={s.emptyCanvasSub}>
-                Complete your first order and the company will be prompted to leave a review here automatically.
-              </p>
-            </div>
+            <ReviewsSection
+              reviews={dbReviews.map(r => ({
+                review_id:   r.review_id,
+                comment:     r.comment,
+                rating:      r.rating,
+                reviewer_id: r.reviewer_id,
+                gig_id:      r.gig_id,
+                reviewer: {
+                  full_name: r.reviewer.full_name,
+                  email:     r.reviewer.email,
+                  school:    r.reviewer.school,
+                },
+                gig: {
+                  title: r.gig.title,
+                },
+                created_at: r.created_at,
+              }))}
+              avgRating={avgRating}
+            />
           </div>
 
           {/* ── ZERO-TO-ONE PORTFOLIO ──────────────────────────

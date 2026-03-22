@@ -385,7 +385,7 @@ const s: Record<string, React.CSSProperties> = {
 
   card: { background: "white", border: "1px solid #E7E5E4", borderRadius: 12, padding: "24px" },
   cardTitle: { fontSize: "0.92rem", fontWeight: 700, color: "#0C0A09", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 },
-  reviewCount: { fontSize: "0.72rem", fontWeight: 600, color: "#A8A29E", fontWeight: 500 },
+  reviewCount: { fontSize: "0.72rem", fontWeight: 500, color: "#A8A29E" },
 
   description: { fontSize: "0.88rem", color: "#44403C", lineHeight: 1.75 },
   tags: { display: "flex", flexWrap: "wrap" as const, gap: 6, marginTop: 14 },

@@ -301,7 +301,7 @@ export default function PostGigPage() {
       }
 
       // Back to dashboard — the new gig will appear in the My Gigs grid
-      router.push(`/dashboard/student?email=${encodeURIComponent(email)}`);
+      router.push(`/dashboards/student?email=${encodeURIComponent(email)}`);;
 
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unable to create gig. Please try again.");

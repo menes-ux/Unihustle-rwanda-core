@@ -130,3 +130,18 @@ export default async function StudentDashboard({
       </div>
     );
   }
+
+  // ── Server Action — update full_name ────────────────────────────────────────
+  // DO NOT TOUCH: this logic is intentionally left exactly as-is.
+  async function updateProfileName(formData: FormData) {
+    "use server";
+    const newName = formData.get("fullName") as string;
+    if (!newName) return;
+    await prisma.user.update({
+      where: { email: userEmail },
+      data: { full_name: newName },
+    });
+    revalidatePath("/dashboards/student");
+  }
+
+  

@@ -2,12 +2,9 @@ import { prisma }     from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { redirect }   from "next/navigation";
 import Link           from "next/link";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell,
-} from "recharts";
-import ReleaseButton from "./ReleaseButton";
 
+import ReleaseButton from "./ReleaseButton";
+import BusinessChart from "@/components/BusinessChart";
 /**
  * Business Dashboard — Server Component
  *
@@ -263,15 +260,7 @@ export default async function BusinessDashboard() {
                   <p style={s.chartTitle}>Monthly Spend vs Agency Estimate</p>
                   <p style={s.chartSub}>Orange = what you paid · Gray = agency equivalent</p>
                 </div>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={spendByMonth} barSize={14} barGap={4} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontFamily: "'Plus Jakarta Sans', sans-serif", fill: "#A8A29E", fontWeight: 600 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontFamily: "'Plus Jakarta Sans', sans-serif", fill: "#A8A29E" }} tickFormatter={(v: number) => `${v / 1000}k`} />
-                    <Tooltip content={<SpendTooltip />} cursor={{ fill: "#F9F9F8" }} />
-                    <Bar dataKey="paid"      fill="#F97316" radius={[4, 4, 0, 0]} name="paid" />
-                    <Bar dataKey="agencyEst" fill="#E7E5E4" radius={[4, 4, 0, 0]} name="agencyEst" />
-                  </BarChart>
-                </ResponsiveContainer>
+              
               </div>
 
               {/* University breakdown */}
@@ -281,13 +270,7 @@ export default async function BusinessDashboard() {
                   <p style={s.chartSub}>Hires by institution</p>
                 </div>
                 <div style={s.pieWrap}>
-                  <ResponsiveContainer width="50%" height={180}>
-                    <PieChart>
-                      <Pie data={UNIVERSITY_DATA} cx="50%" cy="50%" innerRadius={50} outerRadius={76} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                        {UNIVERSITY_DATA.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+                  
                   <div style={s.pieLegend}>
                     {UNIVERSITY_DATA.map(u => (
                       <div key={u.name} style={s.legendItem}>
@@ -471,7 +454,7 @@ export default async function BusinessDashboard() {
                 <p style={s.emptySub}>Students are still setting up their profiles. Check back soon.</p>
               </div>
             ) : (
-              <div style={s.gigsGrid} className="gigs-grid">
+              <div style={s.gigsGrid}>
                 {featuredGigs.map(gig => {
                   const sellerName     = gig.student.full_name;
                   const sellerInitials = getInitials(sellerName, gig.student.email);

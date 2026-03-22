@@ -412,3 +412,66 @@ export default async function StudentDashboard({
             </div>
           </div>
 
+{/* ── ACTIVE ORDERS TABLE ────────────────────────────
+              Maps directly over `activeOrders` (the filtered dbOrders array).
+              Shows an empty state if no active orders exist.
+          */}
+          <div style={s.section}>
+            <div style={s.sectionHead}>
+              <h2 style={s.sectionTitle}>Active Orders</h2>
+              <Link href="#" style={s.sectionAction}>
+                View all <Icon.ChevronRight />
+              </Link>
+            </div>
+
+            {activeOrders.length === 0 ? (
+              // Empty state — shown when the student has no active orders
+              <div style={s.emptyCanvas}>
+                <div style={s.emptyCanvasIcon}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={32} height={32}>
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                    <rect x="9" y="3" width="6" height="4" rx="1" />
+                    <path d="M9 12h6M9 16h4" />
+                  </svg>
+                </div>
+                <p style={s.emptyCanvasTitle}>No active orders yet</p>
+                <p style={s.emptyCanvasSub}>
+                  When a business books one of your gigs, their order will appear here.
+                </p>
+              </div>
+            ) : (
+              <div style={s.table}>
+                <div style={s.tableHead}>
+                  <span>Order ID</span>
+                  <span>Gig</span>
+                  <span>Buyer</span>
+                  <span>Status</span>
+                  <span>Amount</span>
+                  <span></span>
+                </div>
+                {activeOrders.map((order, i) => {
+                  const buyerName = order.buyer.full_name || order.buyer.email.split('@')[0];
+                  const buyerInitials = getInitials(order.buyer.full_name ?? order.buyer.email);
+                  return (
+                    <div
+                      key={order.order_id}
+                      style={{ ...s.tableRow, ...(i === activeOrders.length - 1 ? { borderBottom: 'none' } : {}) }}
+                    >
+                      <span style={s.orderId}>#{String(order.order_id).slice(-6).toUpperCase()}</span>
+                      <span style={s.orderGig}>{order.gig.title}</span>
+                      <div style={s.orderBuyer}>
+                        <div style={s.buyerAvatar}>{buyerInitials}</div>
+                        <span>{buyerName}</span>
+                      </div>
+                      <div style={s.orderDue}>
+                        <Icon.Calendar />
+                        <span>{formatStatus(order.status)}</span>
+                      </div>
+                      <span style={s.orderAmount}>{order.gig.price.toLocaleString()} RWF</span>
+                      <button style={s.deliverBtn}>Deliver</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>

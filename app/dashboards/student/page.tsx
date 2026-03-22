@@ -4,10 +4,14 @@ import { revalidatePath } from "next/cache";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Gig { id: number; title: string; category: string; price: number; orders: number; }
-interface Order { id: string; buyer: string; initials: string; gig: string; due: string; amount: number; }
-interface Review { id: number; company: string; initials: string; role: string; text: string; date: string; }
-interface PortfolioProject { id: number; title: string; description: string; type: 'GitHub' | 'Behance' | 'Live' | 'Figma'; url: string; tags: string[]; }
+interface PortfolioProject {
+  id: number;
+  title: string;
+  description: string;
+  type: 'GitHub' | 'Behance' | 'Live' | 'Figma';
+  url: string;
+  tags: string[];
+}
 
 // ─── Mock/placeholder arrays ──────────────────────────────────────────────────
 

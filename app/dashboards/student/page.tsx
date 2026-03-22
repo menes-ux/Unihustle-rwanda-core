@@ -475,3 +475,82 @@ export default async function StudentDashboard({
               </div>
             )}
           </div>
+
+{/* ── MY GIGS ────────────────────────────────────────
+              Maps directly over `dbGigs` from Prisma.
+              Each card shows real title, category, price,
+              and a live count of active orders on that gig.
+              Shows an empty state with a CTA if no gigs exist.
+          */}
+          <div style={s.section}>
+            <div style={s.sectionHead}>
+              <h2 style={s.sectionTitle}>My Marketplace Gigs</h2>
+              <Link
+                href={`/dashboards/student/post-gig?email=${encodeURIComponent(userEmail)}`}
+                style={s.createBtn}
+              >
+                <Icon.Plus /> Create a New Gig
+              </Link>
+            </div>
+
+            {dbGigs.length === 0 ? (
+              // Empty state — shown to students who haven't listed a gig yet
+              <div style={s.emptyCanvas}>
+                <div style={s.emptyCanvasIcon}>
+                  <Icon.Plus />
+                </div>
+                <p style={s.emptyCanvasTitle}>No gigs yet</p>
+                <p style={s.emptyCanvasSub}>
+                  Create your first gig to start receiving orders from businesses.
+                </p>
+                <Link
+                  href={`/dashboards/student/post-gig?email=${encodeURIComponent(userEmail)}`}
+                  style={{
+                    marginTop: 8, padding: '9px 20px',
+                    background: '#F97316', color: 'white',
+                    borderRadius: 9, fontSize: '0.82rem',
+                    fontWeight: 700, textDecoration: 'none',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <Icon.Plus /> Post Your First Gig
+                </Link>
+              </div>
+            ) : (
+              <div style={s.gigsGrid}>
+                {dbGigs.map(gig => {
+                  const activeGigOrders = gig.orders.length; // already filtered to active statuses
+                  return (
+                    <div key={gig.gig_id} style={s.gigCard}>
+                      <div style={s.gigThumb}>
+                        <span style={s.gigThumbLabel}>{gig.category}</span>
+                      </div>
+                      <div style={s.gigBody}>
+                        <p style={s.gigTitle}>{gig.title}</p>
+                        <div style={s.gigMeta}>
+                          <span style={{
+                            ...s.gigOrderPill,
+                            ...(activeGigOrders > 0 ? s.gigOrderPillActive : {}),
+                          }}>
+                            {activeGigOrders > 0
+                              ? `${activeGigOrders} active order${activeGigOrders > 1 ? 's' : ''}`
+                              : 'No orders yet'}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={s.gigFooter}>
+                        <div>
+                          <span style={s.gigPriceFrom}>Starting at</span>
+                          <span style={s.gigPriceVal}>{gig.price.toLocaleString()} RWF</span>
+                        </div>
+                        <button style={s.iconBtn} aria-label="Options">
+                          <Icon.Dots />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+

@@ -255,8 +255,8 @@ export default function HomePage() {
           <li><a href="#about">About</a></li>
         </ul>
         <div className="nav-actions">
-          <a href="#" className="btn-login">Log In</a>
-          <a href="#" className="btn-signup">Sign Up</a>
+          <Link href="/login" className="btn-login">Log In</Link>
+          <Link href="/login" className="btn-signup">Sign Up</Link>
         </div>
       </nav>
  
@@ -276,8 +276,8 @@ export default function HomePage() {
             Build experience. Earn income. Grow your portfolio before graduation.
           </p>
           <div className="hero-btns">
-            <a href="#" className="btn-primary">Get Started as a Student</a>
-            <a href="#" className="btn-secondary">Hire a Student</a>
+            <Link href="/login" className="btn-primary">Get Started as a Student</Link>
+            <Link href="/marketplace" className="btn-secondary">Hire a Student</Link>
           </div>
           <div className="trust-badges">
             {[
@@ -534,7 +534,7 @@ export default function HomePage() {
             ))}
           </div>
           <div className="jobs-cta reveal">
-            <a href="#" className="btn-primary">Explore All Hustles</a>
+            <Link href="/marketplace" className="btn-primary">Explore All Hustles</Link>
           </div>
         </div>
       </section>
@@ -681,8 +681,8 @@ export default function HomePage() {
           Join the growing community of ALU students and Rwandan businesses creating real opportunities together.
         </p>
         <div className="cta-btns">
-          <a href="#" className="btn-cta-primary">Create Your Account</a>
-          <a href="#" className="btn-cta-ghost">Explore Hustles</a>
+          <Link href="/login" className="btn-cta-primary">Create Your Account</Link>
+          <Link href="/marketplace" className="btn-cta-ghost">Explore Hustles</Link>
         </div>
       </section>
  

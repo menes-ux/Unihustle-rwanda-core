@@ -636,11 +636,19 @@ export default function Marketplace() {
           {filtered.length > 0 ? (
             listView ? (
               <div style={s.listWrap}>
-                {filtered.map(gig => <GigRow key={gig.id} gig={gig} onBook={handleBookGig} />)}
+                {filtered.map(gig => (
+                  <Link key={gig.id} href={`/marketplace/gigs/${gig.id}`} style={{ textDecoration: 'none' }}>
+                    <GigRow gig={gig} onBook={handleBookGig} />
+                  </Link>
+                ))}
               </div>
             ) : (
               <div style={s.gigsGrid}>
-                {filtered.map(gig => <GigCard key={gig.id} gig={gig} onBook={handleBookGig} />)}
+                {filtered.map(gig => (
+                  <Link key={gig.id} href={`/marketplace/gigs/${gig.id}`} style={{ textDecoration: 'none' }}>
+                    <GigCard gig={gig} onBook={handleBookGig} />
+                  </Link>
+                ))}
               </div>
             )
           ) : (

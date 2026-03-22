@@ -5,94 +5,73 @@ import { revalidatePath } from "next/cache";
 
 /**
  * Marks an order as completed when the student clicks "Deliver".
- *
- * This does three things atomically:
- *   1. Sets the order status to "completed"
- *   2. Sets updated_at to now so we have an audit trail
- *   3. Increments the student's hustle_score by 10 as a reward
- *
- * After the update, we revalidate the dashboard so the order
- * disappears from the Active Orders table without a full page reload.
+ * Runs as a transaction — order status flip + hustle score increment
+ * either both succeed or both fail.
  */
 export async function deliverOrder(orderId: number, studentEmail: string) {
-  // Find the student so we can update their hustle score
   const student = await prisma.user.findUnique({
     where: { email: studentEmail },
   });
 
-  if (!student) {
-    throw new Error("Student not found");
-  }
+  if (!student) throw new Error("Student not found");
 
-  // Run both updates in a transaction so they either both succeed
-  // or both fail — we never want an order marked complete without
-  // the hustle score being updated, or vice versa.
   await prisma.$transaction([
     prisma.order.update({
       where: { order_id: orderId },
-      data: {
-        status: "completed",
-      },
+      data:  { status: "completed" },
     }),
     prisma.user.update({
       where: { email: studentEmail },
-      data: {
-        hustle_score: { increment: 10 },
-      },
+      data:  { hustle_score: { increment: 10 } },
     }),
   ]);
 
-  // Revalidate the student dashboard so the UI reflects the change
-  // immediately without requiring a manual page refresh.
   revalidatePath("/dashboards/student");
 }
 
 /**
- * Updates the student's full profile fields from the Edit Profile form.
- *
- * All fields are optional — if the student leaves one blank,
- * it stays as whatever was in the DB before.
+ * Updates the student's profile fields.
+ * Strips blank/undefined values so we never overwrite existing
+ * DB data with empty strings.
  */
 export async function updateStudentProfile(
   studentEmail: string,
   data: {
-    full_name?: string;
-    bio?: string;
-    major?: string;
-    cohort?: string;
+    full_name?:    string;
+    bio?:          string;
+    major?:        string;
+    cohort?:       string;
     year_of_study?: string;
-    gpa?: number;
-    skills?: string[];
+    gpa?:          number;
+    skills?:       string[];
   }
 ) {
-  // Strip out any undefined values so we don't accidentally
-  // overwrite existing DB data with nulls
   const clean = Object.fromEntries(
-    Object.entries(data).filter(([_, v]) => v !== undefined && v !== "")
+    Object.entries(data).filter(([, v]) => v !== undefined && v !== "")
   );
 
   if (Object.keys(clean).length === 0) return;
 
   await prisma.user.update({
     where: { email: studentEmail },
-    data: clean,
+    data:  clean,
   });
 
   revalidatePath("/dashboards/student");
 }
 
 /**
- * Adds a new portfolio project for the student.
- * Called from the "Add Project" button on the dashboard.
+ * Adds a portfolio item for the student.
+ * Includes description, type, and tags now that the migration has run.
  */
 export async function addPortfolioItem(
   studentEmail: string,
   data: {
-    title: string;
-    link: string;
+    title:        string;
+    link:         string;
     description?: string;
-    type: string;
-    tags: string[];
+    type?:        string;
+    tags?:        string[];
   }
 ) {
   const student = await prisma.user.findUnique({
@@ -103,12 +82,12 @@ export async function addPortfolioItem(
 
   await prisma.portfolioItem.create({
     data: {
-      student_id: student.user_id,
-      title: data.title,
-      link: data.link,
+      student_id:  student.user_id,
+      title:       data.title,
+      link:        data.link,
       description: data.description ?? "",
-      type: data.type,
-      tags: data.tags,
+      type:        data.type ?? "Live",
+      tags:        data.tags ?? [],
     },
   });
 
@@ -116,8 +95,9 @@ export async function addPortfolioItem(
 }
 
 /**
- * Deletes a portfolio item. Only the owning student can do this —
- * we verify ownership before deleting.
+ * Deletes a portfolio item.
+ * Verifies ownership before deleting — a student can only
+ * delete their own items.
  */
 export async function deletePortfolioItem(
   portfolioId: number,
@@ -129,12 +109,10 @@ export async function deletePortfolioItem(
 
   if (!student) throw new Error("Student not found");
 
-  // Verify ownership before deleting — we never want a student
-  // to be able to delete another student's portfolio item
   const item = await prisma.portfolioItem.findFirst({
     where: {
       portfolio_id: portfolioId,
-      student_id: student.user_id,
+      student_id:   student.user_id,
     },
   });
 

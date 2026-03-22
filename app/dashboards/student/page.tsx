@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { revalidatePath } from "next/cache";
 import DeliverButton from "./DeliverButton";
 import EditProfileButton from "./EditProfileButton";
+import PortfolioSection from "./PortfolioSection";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,15 +15,6 @@ interface PortfolioProject {
   url: string;
   tags: string[];
 }
-
-// ─── Static placeholder portfolio ─────────────────────────────────────────────
-// These will be replaced once portfolio_projects is added to the Prisma schema.
-
-const PORTFOLIO: PortfolioProject[] = [
-  { id: 1, title: 'UniHustle Rwanda', description: 'A full-stack freelance marketplace for ALU students and local businesses.', type: 'GitHub', url: 'https://github.com', tags: ['Next.js', 'Supabase', 'TypeScript'] },
-  { id: 2, title: 'Kigali Events App', description: 'Mobile-first event discovery app for Kigali.', type: 'Live', url: 'https://example.com', tags: ['React Native', 'Node.js', 'Maps API'] },
-  { id: 3, title: 'Brand System — TechHub RW', description: 'Complete brand identity system including logo, typography, and UI kit.', type: 'Figma', url: 'https://figma.com', tags: ['Figma', 'Branding', 'UI Kit'] },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -162,6 +154,12 @@ export default async function StudentDashboard({
     where: { gig: { student_id: dbUser.user_id } },
     include: { buyer: true, gig: true },
     orderBy: { order_id: "desc" },
+  });
+
+  // ── Fetch portfolio items for this student ──────────────────────────────────
+  const dbPortfolio = await prisma.portfolioItem.findMany({
+    where: { student_id: dbUser.user_id },
+    orderBy: { portfolio_id: "desc" },
   });
 
   // ── Derive computed stats from real DB data ─────────────────────────────────
@@ -592,29 +590,20 @@ export default async function StudentDashboard({
           </div>
 
           {/* ── ZERO-TO-ONE PORTFOLIO ──────────────────────────
-              Static for now — will be replaced with a DB query once
-              the portfolio_projects table is added to the Prisma schema.
+              Dynamically populated from portfolio items in the database.
           */}
           <div style={s.section}>
-            <div style={s.sectionHead}>
-              <div>
-                <h2 style={s.sectionTitle}>Zero-to-One Portfolio</h2>
-                <p style={s.sectionDesc}>Personal projects, repos, and designs — visible to businesses even before your first review</p>
-              </div>
-              <button style={s.createBtn}>
-                <Icon.Plus /> Add Project
-              </button>
-            </div>
-            <div style={s.portfolioGrid}>
-              {PORTFOLIO.map(project => (
-                <PortfolioCard key={project.id} project={project} />
-              ))}
-              <button style={s.portfolioAddCard}>
-                <div style={s.portfolioAddIcon}><Icon.Plus /></div>
-                <p style={s.portfolioAddText}>Add a project</p>
-                <p style={s.portfolioAddSub}>GitHub, Behance, Figma, or a live link</p>
-              </button>
-            </div>
+            <PortfolioSection
+              studentEmail={userEmail}
+              items={dbPortfolio.map(item => ({
+                portfolio_id: item.portfolio_id,
+                title:        item.title,
+                link:         item.link,
+                description:  item.description,
+                type:         item.type,
+                tags:         item.tags,
+              }))}
+            />
           </div>
 
         </div>

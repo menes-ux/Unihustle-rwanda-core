@@ -1,7 +1,15 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { clearSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+
+export async function logout() {
+  "use server";
+  await clearSession();
+  redirect("/login");
+}
 
 /**
  * Marks an order as completed when the student clicks "Deliver".

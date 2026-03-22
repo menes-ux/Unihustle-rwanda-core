@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 import Link from 'next/link';
 import { revalidatePath } from "next/cache";
 import DeliverButton from "./DeliverButton";
 import EditProfileButton from "./EditProfileButton";
 import PortfolioSection from "./PortfolioSection";
 import ReviewsSection from "./ReviewsSection";
+import { logout } from "./actions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -98,13 +101,10 @@ function PortfolioCard({ project }: { project: PortfolioProject }) {
 
 // ─── Page (Server Component) ──────────────────────────────────────────────────
 
-export default async function StudentDashboard({
-  searchParams,
-}: {
-  searchParams: Promise<{ email?: string }>;
-}) {
-  const params = await searchParams;
-  const userEmail = params.email || "m.adisso@alustudent.com";
+export default async function StudentDashboard() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  const userEmail = session.email;
 
   // ── Fetch user from DB ──────────────────────────────────────────────────────
   const dbUser = await prisma.user.findUnique({
@@ -238,6 +238,11 @@ export default async function StudentDashboard({
               )}
             </Link>
             <button style={s.avatar} aria-label="Profile">{initials}</button>
+            <form action={logout} style={{ margin: 0 }}>
+              <button type="submit" style={{ ...s.menuItem, color: '#EF4444' }}>
+                Log Out
+              </button>
+            </form>
           </div>
         </div>
       </nav>
@@ -660,6 +665,7 @@ const s: Record<string, React.CSSProperties> = {
   switchLink: { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, color: '#44403C', border: '1px solid #E7E5E4', marginRight: 6, textDecoration: 'none' },
   navLink: { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, color: '#44403C', textDecoration: 'none' },
   navBadge: { background: '#F97316', color: 'white', fontSize: '0.62rem', fontWeight: 800, borderRadius: 999, padding: '1px 6px' },
+  menuItem: { display: 'inline-flex', alignItems: 'center', border: 'none', background: 'transparent', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', marginLeft: 8 },
   avatar: { width: 32, height: 32, borderRadius: 999, background: '#0C0A09', color: 'white', border: 'none', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginLeft: 8 },
   main: { padding: '32px 0 80px' },
   container: { maxWidth: 1160, margin: '0 auto', padding: '0 28px' },

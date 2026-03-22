@@ -123,36 +123,25 @@ export default function AuthPage() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    setDevCodeHint("");
 
     try {
-      const res = await fetch("/api/auth/verify-code", {
-        method: "POST",
+      const res  = await fetch("/api/auth/verify-code", {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code }),
+        body:    JSON.stringify({ email, code }),
       });
 
-      const data: VerifyCodeResponse = await res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
 
-      if (!res.ok) {
-        throw new Error(data.error || "Invalid or expired code. Please try again.");
-      }
-
-      // Redirect to the correct dashboard based on the role selected at the start.
-      // The backend can also return the role if you want to derive it from the DB instead.
-      const verifiedRole = data.user?.role ?? role;
-      localStorage.setItem("unihustle_email", email);
-      localStorage.setItem("unihustle_role", verifiedRole);
-      const encodedEmail = encodeURIComponent(email);
-      router.push(
-        verifiedRole === "business"
-          ? `/dashboards/business?email=${encodedEmail}`
-          : `/dashboards/student?email=${encodedEmail}`
+      // Cookie is now set — redirect based on role from DB
+      router.push(data.role === "business"
+        ? "/dashboards/business"
+        : "/dashboards/student"
       );
 
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Unable to verify code.");
-    } finally {
+    } catch (err: any) {
+      setError(err.message);
       setIsLoading(false);
     }
   };

@@ -1,5 +1,6 @@
 // first install nodemailer: npm install nodemailer
 
+import "dotenv/config"
 import nodemailer from "nodemailer"
 
 export async function sendVerificationEmail(email: string, code: string) {

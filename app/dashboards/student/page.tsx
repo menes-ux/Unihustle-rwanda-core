@@ -111,4 +111,22 @@ export default async function StudentDashboard({
   const params = await searchParams;
   const userEmail = params.email || "m.adisso@alustudent.com";
 
-  
+// ── Fetch user from DB ──────────────────────────────────────────────────────
+  const dbUser = await prisma.user.findUnique({
+    where: { email: userEmail },
+  });
+
+  // If the email isn't in the DB yet, show a clean error card
+  if (!dbUser) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F5F5F4' }}>
+        <div style={{ background: 'white', padding: 40, borderRadius: 14, textAlign: 'center', border: '1px solid #E7E5E4', maxWidth: 400 }}>
+          <h2 style={{ color: '#DC2626', fontSize: '1.1rem', fontWeight: 700, marginBottom: 8 }}>Profile Not Found</h2>
+          <p style={{ color: '#78716C', fontSize: '0.85rem' }}>We could not find <strong>{userEmail}</strong> in the database.</p>
+          <Link href="/login" style={{ display: 'inline-block', marginTop: 20, background: '#F97316', color: 'white', padding: '9px 20px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none' }}>
+            Back to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }

@@ -361,7 +361,7 @@ export default async function StudentDashboard({
           <div style={s.section}>
             <div style={s.sectionHead}>
               <h2 style={s.sectionTitle}>My Marketplace Gigs</h2>
-            <Link href={`/dashboards/student/post-gig?email=${encodeURIComponent(userEmail)}`} style={s.createBtn}>
+            <Link href={`/dashboards/student/post-gig?email=${encodeURIComponent(userEmail)}`}>
               <Icon.Plus /> Create a New Gig
             </Link>
             </div>

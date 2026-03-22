@@ -151,7 +151,7 @@ export default async function BusinessDashboard() {
           </div>
 
           {/* ── STATS ──────────────────────────────────────────── */}
-          <div style={s.statsRow}>
+          <div style={s.statsRow} className="stats-row">
             <div style={s.statCard}>
               <div style={s.statIcon}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
@@ -209,7 +209,7 @@ export default async function BusinessDashboard() {
             </div>
 
             {/* Analytics KPI row */}
-            <div style={s.analyticsKpiRow}>
+            <div style={s.analyticsKpiRow} className="analytics-kpi">
               {[
                 {
                   label: "Total Investment",
@@ -256,7 +256,7 @@ export default async function BusinessDashboard() {
             </div>
 
             {/* Charts row */}
-            <div style={s.chartsRow}>
+            <div style={s.chartsRow} className="charts-row">
               {/* Spend chart */}
               <div style={s.chartCard}>
                 <div style={s.chartHead}>
@@ -332,7 +332,7 @@ export default async function BusinessDashboard() {
                   <p style={s.sectionDesc}>How much you saved by hiring students vs traditional agencies</p>
                 </div>
               </div>
-              <div style={s.roiCard}>
+              <div style={s.roiCard} className="roi-card">
                 <div style={s.roiLeft}>
                   <p style={s.roiSavedLabel}>Total Saved</p>
                   <p style={s.roiSavedValue}>{totalSaved.toLocaleString()} RWF</p>
@@ -347,7 +347,7 @@ export default async function BusinessDashboard() {
                     Agency-equivalent cost estimated at 3.1x the student rate, based on typical Kigali market pricing.
                   </p>
                 </div>
-                <div style={s.roiDivider} />
+                <div style={s.roiDivider} className="roi-divider" />
                 <div style={s.roiRight}>
                   <p style={s.roiBreakdownTitle}>Your spending breakdown</p>
                   {completedHires.slice(0, 5).map(order => {
@@ -399,7 +399,7 @@ export default async function BusinessDashboard() {
               </div>
             ) : (
               <div style={s.table}>
-                <div style={s.tableHead}>
+                <div style={s.tableHead} className="table-head">
                   <span>Order</span>
                   <span>Student</span>
                   <span>Gig</span>
@@ -471,7 +471,7 @@ export default async function BusinessDashboard() {
                 <p style={s.emptySub}>Students are still setting up their profiles. Check back soon.</p>
               </div>
             ) : (
-              <div style={s.gigsGrid}>
+              <div style={s.gigsGrid} className="gigs-grid">
                 {featuredGigs.map(gig => {
                   const sellerName     = gig.student.full_name;
                   const sellerInitials = getInitials(sellerName, gig.student.email);

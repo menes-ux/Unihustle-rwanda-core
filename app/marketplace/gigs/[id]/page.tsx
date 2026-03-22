@@ -84,7 +84,7 @@ export default async function GigDetailPage({
       {/* ── MAIN LAYOUT ──────────────────────────────────────── */}
       <div style={s.body}>
         <div style={s.container}>
-          <div style={s.layout}>
+          <div style={s.layout} className="layout">
 
             {/* ── LEFT: Gig content ─────────────────────────── */}
             <div style={s.left}>
@@ -238,7 +238,7 @@ export default async function GigDetailPage({
             </div>
 
             {/* ── RIGHT: Booking sidebar ─────────────────────── */}
-            <aside style={s.sidebar}>
+            <aside style={s.sidebar} className="sidebar">
               <div style={s.bookingCard}>
 
                 {/* Price */}

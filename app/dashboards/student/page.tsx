@@ -359,7 +359,7 @@ export default async function StudentDashboard() {
               All four values are derived directly from dbOrders and dbUser.
               Nothing here is hardcoded.
           */}
-          <div style={s.statsRow}>
+          <div style={s.statsRow} className="stats-row">
 
             {/* Active Orders — count of pending + in_progress orders */}
             <div style={s.statCard}>
@@ -472,7 +472,7 @@ export default async function StudentDashboard() {
               </div>
             ) : (
               <div style={s.table}>
-                <div style={s.tableHead}>
+                <div style={s.tableHead} className="table-head">
                   <span>Order ID</span>
                   <span>Gig</span>
                   <span>Buyer</span>
@@ -548,7 +548,7 @@ export default async function StudentDashboard() {
                 </Link>
               </div>
             ) : (
-              <div style={s.gigsGrid}>
+              <div style={s.gigsGrid} className="gigs-grid">
                 {dbGigs.map(gig => {
                   const activeGigOrders = gig.orders.length; // already filtered to active statuses
                   return (

@@ -60,7 +60,7 @@ export default function PortfolioSection({ studentEmail, items }: Props) {
       </div>
 
       {/* Portfolio grid */}
-      <div style={s.portfolioGrid}>
+      <div style={s.portfolioGrid} className="portfolio-grid">
         {items.map(item => (
           <div key={item.portfolio_id} style={s.portfolioCard}>
             <div style={s.portfolioCardTop}>

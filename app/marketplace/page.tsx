@@ -451,10 +451,10 @@ export default function Marketplace() {
       </nav>
 
       {/* ── BODY ─────────────────────────────────────────────────── */}
-      <div style={s.body}>
+      <div style={s.body} className="marketplace-body">
 
         {/* ── SIDEBAR ────────────────────────────────────────────── */}
-        <aside style={s.sidebar}>
+        <aside style={s.sidebar} className="sidebar">
           <p style={s.sidebarHeading}>Filters</p>
 
           {/* University filter */}
@@ -643,7 +643,7 @@ export default function Marketplace() {
                 ))}
               </div>
             ) : (
-              <div style={s.gigsGrid}>
+              <div style={s.gigsGrid} className="gigs-grid">
                 {filtered.map(gig => (
                   <Link key={gig.id} href={`/marketplace/gigs/${gig.id}`} style={{ textDecoration: 'none' }}>
                     <GigCard gig={gig} onBook={handleBookGig} />

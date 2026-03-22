@@ -120,7 +120,7 @@ export default function ReviewsSection({ reviews, avgRating }: Props) {
         </div>
       ) : (
         // Reviews grid — 2 columns on desktop, 1 on mobile
-        <div style={s.reviewsGrid}>
+        <div style={s.reviewsGrid} className="reviews-grid">
           {reviews.map(review => {
             const reviewerName = review.reviewer.full_name || review.reviewer.email;
             const initials     = getInitials(review.reviewer.full_name, review.reviewer.email);

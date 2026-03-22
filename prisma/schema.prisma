@@ -1,44 +1,59 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"] 
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL") // Secured for Supabase pgBouncer
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
   user_id   Int    @id @default(autoincrement())
   full_name String
   email     String @unique
-  role      Role 
+  role      Role
 
-  school       String   @default("ALU") 
-  skills       String[] 
-  hustle_score Int      @default(100)   
-  is_alumni    Boolean  @default(false) 
+  school       String   @default("ALU")
+  skills       String[]
+  hustle_score Int      @default(100)
+  is_alumni    Boolean  @default(false)
 
-  // to verify the email
-  is_verified Boolean @default(false)
-  verification_code String?
+  // Email verification
+  is_verified          Boolean   @default(false)
+  verification_code    String?
   verification_expires DateTime?
+
+  // profile fields shown on the student dashboard card ──
+  bio           String?   // "Full-stack developer passionate about..."
+  major         String?   // "BSc. Software Engineering"
+  cohort        String?   // "Class of 2026"
+  year_of_study String?   // "Year 2"
+  gpa           Float?    // 3.85 — shown with colour-coded Dean's List badge
 
   // Relations
   gigs            Gig[]           @relation("StudentGigs")
   orders          Order[]         @relation("BusinessOrders")
-  portfolio_items PortfolioItem[] 
-  reviews_given   Review[]        @relation("BusinessReviews") // Added this!
+  portfolio_items PortfolioItem[]
+  reviews_given   Review[]        @relation("BusinessReviews")
+
+  // ── NEW: reviews received by this student from businesses ──
+  reviews_received Review[] @relation("StudentReviews")
 }
 
 model PortfolioItem {
   portfolio_id Int    @id @default(autoincrement())
-  title        String 
-  link         String 
-  
-  student_id   Int
-  student      User   @relation(fields: [student_id], references: [user_id])
+  title        String
+  link         String
+
+  // ── NEW: these fields make the portfolio cards match the UI ──
+  description String?  // short project description shown on the card
+  type        String   @default("Live") // "GitHub" | "Figma" | "Live" | "Behance"
+  tags        String[] // ["Next.js", "Supabase", "TypeScript"]
+
+  student_id Int
+  student    User @relation(fields: [student_id], references: [user_id])
 }
 
 model Gig {
@@ -47,6 +62,12 @@ model Gig {
   category String
   price    Int       @default(0)
   status   GigStatus
+
+  // ── NEW: extra fields captured by the Post Gig form ──
+  description   String?  // full gig description shown on the detail page
+  delivery_days Int      @default(3)   // shown as "3d delivery" on cards
+  revisions     Int      @default(2)   // "2 revisions included"
+  tags          String[]              // skill tags for marketplace search
 
   student_id Int
   student    User @relation("StudentGigs", fields: [student_id], references: [user_id])
@@ -59,24 +80,45 @@ model Order {
   order_id Int @id @default(autoincrement())
 
   gig_id   Int
-  buyer_id Int 
+  buyer_id Int
 
   gig   Gig  @relation(fields: [gig_id], references: [gig_id])
   buyer User @relation("BusinessOrders", fields: [buyer_id], references: [user_id])
 
-  status OrderStatus
+  status OrderStatus @default(pending)
+
+  // ── NEW: timestamps needed for deadline display and audit trail ──
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deadline   DateTime? // set when the order is created based on gig.delivery_days
+
+  // ── NEW: link to the review left after completion ──
+  review Review?
 }
 
 model Review {
   review_id Int @id @default(autoincrement())
 
   gig_id      Int
-  reviewer_id Int // Added this so we know WHICH business left the review
+  reviewer_id Int  // the business that left the review
   rating      Int
   comment     String
 
+  // ── NEW: link back to the specific order this review is about ──
+  // This enforces one review per order and lets us show the review
+  // on the student's dashboard under "Reviews from Companies"
+  order_id   Int  @unique
+  order      Order @relation(fields: [order_id], references: [order_id])
+
+  // ── NEW: link to the student who received the review ──
+  // Needed so we can query reviews_received on the student dashboard
+  student_id Int
+  student    User @relation("StudentReviews", fields: [student_id], references: [user_id])
+
   gig      Gig  @relation(fields: [gig_id], references: [gig_id])
   reviewer User @relation("BusinessReviews", fields: [reviewer_id], references: [user_id])
+
+  created_at DateTime @default(now())
 }
 
 enum Role {

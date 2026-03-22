@@ -1,20 +1,15 @@
 "use server";
 
-import { prisma } from "@/lib/db";
-import { clearSession } from "@/lib/session";
-import { redirect } from "next/navigation";
+import { prisma }         from "@/lib/db";
 import { revalidatePath } from "next/cache";
-
-export async function logout() {
-  "use server";
-  await clearSession();
-  redirect("/login");
-}
 
 /**
  * Marks an order as completed when the student clicks "Deliver".
- * Runs as a transaction — order status flip + hustle score increment
- * either both succeed or both fail.
+ * Runs as a transaction — status flip + hustle score increment
+ * both succeed or both fail.
+ *
+ * Email notification to the business is intentionally skipped for now.
+ * Add sendDeliveryEmail() here when Resend is integrated.
  */
 export async function deliverOrder(orderId: number, studentEmail: string) {
   const student = await prisma.user.findUnique({
@@ -39,19 +34,19 @@ export async function deliverOrder(orderId: number, studentEmail: string) {
 
 /**
  * Updates the student's profile fields.
- * Strips blank/undefined values so we never overwrite existing
- * DB data with empty strings.
+ * Strips blank/undefined values so existing DB data is never
+ * overwritten with empty strings.
  */
 export async function updateStudentProfile(
   studentEmail: string,
   data: {
-    full_name?:    string;
-    bio?:          string;
-    major?:        string;
-    cohort?:       string;
+    full_name?:     string;
+    bio?:           string;
+    major?:         string;
+    cohort?:        string;
     year_of_study?: string;
-    gpa?:          number;
-    skills?:       string[];
+    gpa?:           number;
+    skills?:        string[];
   }
 ) {
   const clean = Object.fromEntries(
@@ -70,7 +65,6 @@ export async function updateStudentProfile(
 
 /**
  * Adds a portfolio item for the student.
- * Includes description, type, and tags now that the migration has run.
  */
 export async function addPortfolioItem(
   studentEmail: string,
@@ -108,7 +102,7 @@ export async function addPortfolioItem(
  * delete their own items.
  */
 export async function deletePortfolioItem(
-  portfolioId: number,
+  portfolioId:  number,
   studentEmail: string
 ) {
   const student = await prisma.user.findUnique({
@@ -131,4 +125,14 @@ export async function deletePortfolioItem(
   });
 
   revalidatePath("/dashboards/student");
+}
+
+/**
+ * Logs the student out by clearing the session cookie.
+ */
+export async function logout() {
+  const { clearSession } = await import("@/lib/session");
+  const { redirect }     = await import("next/navigation");
+  await clearSession();
+  redirect("/login");
 }

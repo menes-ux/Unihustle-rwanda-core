@@ -1,22 +1,16 @@
-import { prisma }     from "@/lib/db";
-import { getSession } from "@/lib/session";
+import { prisma }      from "@/lib/db";
+import { getSession }  from "@/lib/session";
 import { NextResponse } from "next/server";
 
 /**
  * POST /api/orders
  *
- * Creates a new order when a business books a student's gig.
- *
- * Body: { gig_id, buyer_email, delivery_days }
- *
- * This does three things:
- *   1. Verifies the buyer is logged in and is a business account
- *   2. Creates the Order row with status "pending" and a calculated deadline
- *   3. Returns the new order so the frontend can confirm and redirect
+ * Creates a new order when a business books a student gig.
+ * Email notification is intentionally skipped for now —
+ * add Resend integration later when ready.
  */
 export async function POST(req: Request) {
   try {
-    // Verify the request comes from a logged-in business user
     const session = await getSession();
 
     if (!session) {
@@ -42,10 +36,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Look up the buyer and the gig in parallel
     const [buyer, gig] = await Promise.all([
       prisma.user.findUnique({ where: { email: session.email } }),
-      prisma.gig.findUnique({ where: { gig_id: parseInt(gig_id) } }),
+      prisma.gig.findUnique({
+        where:   { gig_id: parseInt(gig_id) },
+        include: { student: true },
+      }),
     ]);
 
     if (!buyer) {
@@ -63,7 +59,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Prevent a student from booking their own gig
     if (gig.student_id === buyer.user_id) {
       return NextResponse.json(
         { error: "You cannot book your own gig" },
@@ -71,14 +66,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Calculate the deadline based on delivery_days
-    // We use the gig's delivery_days field, falling back to the
-    // value sent in the request body if not set on the gig
     const days     = (gig as any).delivery_days ?? delivery_days ?? 3;
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + days);
 
-    // Create the order
     const order = await prisma.order.create({
       data: {
         gig_id:   gig.gig_id,

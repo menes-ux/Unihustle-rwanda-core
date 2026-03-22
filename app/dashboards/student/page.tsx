@@ -144,4 +144,44 @@ export default async function StudentDashboard({
     revalidatePath("/dashboards/student");
   }
 
-  
+// ── Fetch gigs with their active order count ────────────────────────────────
+  const dbGigs = await prisma.gig.findMany({
+    where: { student_id: dbUser.user_id },
+    include: {
+      orders: {
+        where: { status: { in: ["pending", "in_progress"] } },
+      },
+    },
+    orderBy: { gig_id: "desc" },
+  });
+
+  // ── Fetch all orders for this student (as the seller) ──────────────────────
+  const dbOrders = await prisma.order.findMany({
+    where: { gig: { student_id: dbUser.user_id } },
+    include: { buyer: true, gig: true },
+    orderBy: { order_id: "desc" },
+  });
+
+  // ── Derive computed stats from real DB data ─────────────────────────────────
+
+  // Only orders with these statuses are "active" — shown in the table
+  const activeOrders = dbOrders.filter(o =>
+    o.status === "pending" || o.status === "in_progress"
+  );
+
+  // Earnings and job count come only from fully completed orders
+  const completedOrders = dbOrders.filter(o => o.status === "completed");
+  const totalEarnings   = completedOrders.reduce((sum, o) => sum + o.gig.price, 0);
+  const completedJobs   = completedOrders.length;
+
+  // ── Derive display values from the DB user record ──────────────────────────
+  // We use the stored full_name if available, otherwise parse the email prefix.
+  const hasName    = dbUser.full_name && dbUser.full_name !== "EMPTY";
+  const displayName = hasName
+    ? dbUser.full_name!
+    : dbUser.email.split('@')[0].split('.').map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+
+  const initials   = getInitials(dbUser.full_name ?? dbUser.email);
+  const hustleScore = dbUser.hustle_score ?? 0;
+  const isVerified  = dbUser.is_verified ?? false;
+

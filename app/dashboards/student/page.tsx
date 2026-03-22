@@ -287,3 +287,39 @@ export default async function StudentDashboard({
 
           ) : (
 
+// ── FULL PROFILE STATE: name is set, show the complete card ──
+            <div style={s.profileCard}>
+              <div style={s.profileCardLeft}>
+                <div style={s.profileBigAvatar}>{initials}</div>
+                <div style={s.profileDetails}>
+                  <div style={s.profileNameRow}>
+                    <h1 style={s.profileDisplayName}>{displayName}</h1>
+                    {isVerified && (
+                      <div style={s.verifiedPill}>
+                        <Icon.Verified />
+                        <span>Verified Student</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={s.profileUniRow}>
+                    <span style={s.profileUni}>{UNIVERSITY}</span>
+                    <span style={s.profileDot}>·</span>
+                    <span style={s.profileCohort}>{COHORT}</span>
+                    <span style={s.profileDot}>·</span>
+                    <span style={s.profileMajor}>{MAJOR}</span>
+                  </div>
+                  <p style={s.profileBio}>{BIO}</p>
+                  <div style={s.profileSkills}>
+                    {SKILLS.map(skill => (
+                      <span key={skill} style={s.skillPill}>{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={s.profileCardRight}>
+                <button style={s.editProfileBtn}>
+                  <Icon.Edit /> Edit Profile
+                </button>
+              </div>
+            </div>
+          )}

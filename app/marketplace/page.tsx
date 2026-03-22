@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ interface Gig {
 // Simulated "current year" for cohort access logic
 const CURRENT_YEAR = 2026;
 
-const ALL_GIGS: Gig[] = [
+const SEED_GIGS: Gig[] = [
   { id: 1,  title: 'I will build a full-stack web application with Next.js and Supabase',  seller: 'David Achibiri',   initials: 'DA', avatarColor: '#10B981', university: 'ALU Rwanda',   category: 'Development', price: 60000, deliveryDays: 7,  tags: ['React', 'Next.js', 'Supabase'],     cohortYear: 2025, featured: true },
   { id: 2,  title: 'I will design a complete brand identity and logo for your startup',    seller: 'Manuelle Ackun',   initials: 'MA', avatarColor: '#8B5CF6', university: 'ALU Rwanda',   category: 'Design',      price: 20000, deliveryDays: 5,  tags: ['Figma', 'Branding', 'Logo'],         cohortYear: 2025 },
   { id: 3,  title: 'I will translate 500 words between English, French and Kinyarwanda',  seller: 'Jean Nepo M.',     initials: 'JN', avatarColor: '#3B82F6', university: 'ALU Rwanda',   category: 'Writing',     price: 8000,  deliveryDays: 2,  tags: ['Translation', 'French', 'Kinyarwanda'], cohortYear: 2025 },
@@ -136,7 +136,7 @@ function AccessBadge({ cohortYear }: { cohortYear: number }) {
 
 // ─── Gig Card (grid) ──────────────────────────────────────────────────────────
 
-function GigCard({ gig }: { gig: Gig }) {
+function GigCard({ gig, onBook }: { gig: Gig; onBook: (gigId: number) => Promise<void> }) {
   const [saved, setSaved] = useState(false);
   const status = getAccessStatus(gig.cohortYear);
 
@@ -203,6 +203,11 @@ function GigCard({ gig }: { gig: Gig }) {
         <div style={s.gigPriceWrap}>
           <span style={s.gigPriceFrom}>From</span>
           <span style={s.gigPrice}>{gig.price.toLocaleString()} RWF</span>
+          {status !== 'expired' && (
+            <button style={{ ...s.bookBtn, marginTop: 6 }} onClick={() => void onBook(gig.id)}>
+              Book
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -211,7 +216,7 @@ function GigCard({ gig }: { gig: Gig }) {
 
 // ─── Gig Row (list view) ──────────────────────────────────────────────────────
 
-function GigRow({ gig }: { gig: Gig }) {
+function GigRow({ gig, onBook }: { gig: Gig; onBook: (gigId: number) => Promise<void> }) {
   const status = getAccessStatus(gig.cohortYear);
   return (
     <div style={{ ...s.gigRow, ...(status === 'expired' ? { opacity: 0.55 } : {}) }}>
@@ -243,7 +248,7 @@ function GigRow({ gig }: { gig: Gig }) {
       <div style={s.gigRowPrice}>
         <span style={s.gigPriceFrom}>From</span>
         <span style={s.gigPrice}>{gig.price.toLocaleString()} RWF</span>
-        {status !== 'expired' && <button style={s.bookBtn}>Book</button>}
+        {status !== 'expired' && <button style={s.bookBtn} onClick={() => void onBook(gig.id)}>Book</button>}
       </div>
     </div>
   );
@@ -262,9 +267,82 @@ export default function Marketplace() {
   const [listView, setListView]           = useState(false);
   const [profileOpen, setProfileOpen]     = useState(false);
   const [showExpired, setShowExpired]     = useState(false);
+  const [gigs, setGigs]                   = useState<Gig[]>(SEED_GIGS);
+  const [actionMessage, setActionMessage] = useState('');
+  const [buyerEmail, setBuyerEmail]       = useState('');
+
+  useEffect(() => {
+    setBuyerEmail(new URLSearchParams(window.location.search).get('email') ?? '');
+  }, []);
+
+  useEffect(() => {
+    const loadGigs = async () => {
+      try {
+        const response = await fetch('/api/gigs');
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data.gigs)) {
+          return;
+        }
+
+        const mapped: Gig[] = data.gigs.map((item: {
+          id: number;
+          title: string;
+          seller: string;
+          university: string;
+          category: string;
+          price: number;
+          deliveryDays: number;
+          tags: string[];
+          cohortYear: number;
+        }) => {
+          const parts = item.seller.split(' ').filter(Boolean);
+          const initials = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'ST';
+          return {
+            id: item.id,
+            title: item.title,
+            seller: item.seller,
+            initials,
+            avatarColor: '#0C0A09',
+            university: item.university,
+            category: item.category,
+            price: item.price,
+            deliveryDays: item.deliveryDays ?? 7,
+            tags: item.tags?.length ? item.tags : [item.category],
+            cohortYear: item.cohortYear ?? 2025,
+          };
+        });
+        setGigs(mapped);
+      } catch {
+        // Keeps seed data if API is unavailable.
+      }
+    };
+    void loadGigs();
+  }, []);
+
+  const handleBookGig = async (gigId: number) => {
+    setActionMessage('');
+    if (!buyerEmail) {
+      setActionMessage('Add your business email in the URL (?email=you@company.com) to place orders.');
+      return;
+    }
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gigId, buyerEmail }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Unable to place order');
+      }
+      setActionMessage('Order placed successfully.');
+    } catch (error: unknown) {
+      setActionMessage(error instanceof Error ? error.message : 'Unable to place order');
+    }
+  };
 
   const filtered = useMemo(() => {
-    let list = [...ALL_GIGS];
+    let list = [...gigs];
 
     if (!showExpired) list = list.filter(g => getAccessStatus(g.cohortYear) !== 'expired');
     if (activeCategory !== 'All') list = list.filter(g => g.category === activeCategory);
@@ -289,7 +367,7 @@ export default function Marketplace() {
     }
 
     return list;
-  }, [search, activeCategory, activeUniversity, sortBy, priceRange, maxDelivery, showExpired]);
+  }, [search, activeCategory, activeUniversity, sortBy, priceRange, maxDelivery, showExpired, gigs]);
 
   const resetAll = () => {
     setSearch(''); setActiveCategory('All'); setActiveUniversity('All Universities');
@@ -331,8 +409,8 @@ export default function Marketplace() {
           </div>
 
           <div style={s.navRight}>
-            <Link href="/auth" style={s.navLoginBtn}>Log In</Link>
-            <Link href="/auth" style={s.navSignupBtn}>Sign Up Free</Link>
+            <Link href="/login" style={s.navLoginBtn}>Log In</Link>
+            <Link href="/login" style={s.navSignupBtn}>Sign Up Free</Link>
             <div style={{ position: 'relative' }}>
               <button style={s.avatar} onClick={() => setProfileOpen(v => !v)}>DA</button>
               {profileOpen && (
@@ -477,6 +555,11 @@ export default function Marketplace() {
 
         {/* ── RESULTS ────────────────────────────────────────────── */}
         <main style={s.results}>
+          {actionMessage && (
+            <p style={{ marginBottom: 10, color: actionMessage.includes('success') ? '#16A34A' : '#DC2626', fontWeight: 600, fontSize: '0.82rem' }}>
+              {actionMessage}
+            </p>
+          )}
 
           {/* Results bar */}
           <div style={s.resultsBar}>
@@ -553,11 +636,11 @@ export default function Marketplace() {
           {filtered.length > 0 ? (
             listView ? (
               <div style={s.listWrap}>
-                {filtered.map(gig => <GigRow key={gig.id} gig={gig} />)}
+                {filtered.map(gig => <GigRow key={gig.id} gig={gig} onBook={handleBookGig} />)}
               </div>
             ) : (
               <div style={s.gigsGrid}>
-                {filtered.map(gig => <GigCard key={gig.id} gig={gig} />)}
+                {filtered.map(gig => <GigCard key={gig.id} gig={gig} onBook={handleBookGig} />)}
               </div>
             )
           ) : (

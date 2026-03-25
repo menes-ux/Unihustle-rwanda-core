@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 import Link from 'next/link';
 import { revalidatePath } from "next/cache";
+import DeliverButton from "./DeliverButton";
+import EditProfileButton from "./EditProfileButton";
+import PortfolioSection from "./PortfolioSection";
+import ReviewsSection from "./ReviewsSection";
+import { logout } from "./actions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,15 +19,6 @@ interface PortfolioProject {
   url: string;
   tags: string[];
 }
-
-// ─── Static placeholder portfolio ─────────────────────────────────────────────
-// These will be replaced once portfolio_projects is added to the Prisma schema.
-
-const PORTFOLIO: PortfolioProject[] = [
-  { id: 1, title: 'UniHustle Rwanda', description: 'A full-stack freelance marketplace for ALU students and local businesses.', type: 'GitHub', url: 'https://github.com', tags: ['Next.js', 'Supabase', 'TypeScript'] },
-  { id: 2, title: 'Kigali Events App', description: 'Mobile-first event discovery app for Kigali.', type: 'Live', url: 'https://example.com', tags: ['React Native', 'Node.js', 'Maps API'] },
-  { id: 3, title: 'Brand System — TechHub RW', description: 'Complete brand identity system including logo, typography, and UI kit.', type: 'Figma', url: 'https://figma.com', tags: ['Figma', 'Branding', 'UI Kit'] },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,13 +101,10 @@ function PortfolioCard({ project }: { project: PortfolioProject }) {
 
 // ─── Page (Server Component) ──────────────────────────────────────────────────
 
-export default async function StudentDashboard({
-  searchParams,
-}: {
-  searchParams: Promise<{ email?: string }>;
-}) {
-  const params = await searchParams;
-  const userEmail = params.email || "m.adisso@alustudent.com";
+export default async function StudentDashboard() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  const userEmail = session.email;
 
   // ── Fetch user from DB ──────────────────────────────────────────────────────
   const dbUser = await prisma.user.findUnique({
@@ -161,6 +156,27 @@ export default async function StudentDashboard({
     include: { buyer: true, gig: true },
     orderBy: { order_id: "desc" },
   });
+
+  // ── Fetch portfolio items for this student ──────────────────────────────────
+  const dbPortfolio = await prisma.portfolioItem.findMany({
+    where: { student_id: dbUser.user_id },
+    orderBy: { portfolio_id: "desc" },
+  });
+
+  // ── Fetch reviews for this student ──────────────────────────────────────────
+  const dbReviews = await prisma.review.findMany({
+    where: { student_id: dbUser.user_id },
+    include: {
+      reviewer: true, // the business that left the review
+      gig:      true, // which gig it was for
+    },
+    orderBy: { review_id: "desc" },
+  });
+
+  // Calculate the average rating once, pass it as a prop
+  const avgRating = dbReviews.length > 0
+    ? dbReviews.reduce((sum, r) => sum + r.rating, 0) / dbReviews.length
+    : undefined;
 
   // ── Derive computed stats from real DB data ─────────────────────────────────
 
@@ -222,6 +238,11 @@ export default async function StudentDashboard({
               )}
             </Link>
             <button style={s.avatar} aria-label="Profile">{initials}</button>
+            <form action={logout} style={{ margin: 0 }}>
+              <button type="submit" style={{ ...s.menuItem, color: '#EF4444' }}>
+                Log Out
+              </button>
+            </form>
           </div>
         </div>
       </nav>
@@ -317,9 +338,19 @@ export default async function StudentDashboard({
                 </div>
               </div>
               <div style={s.profileCardRight}>
-                <button style={s.editProfileBtn}>
-                  <Icon.Edit /> Edit Profile
-                </button>
+                <EditProfileButton
+                  studentEmail={userEmail}
+                  current={{
+                    full_name:     dbUser.full_name ?? "",
+                    bio:           (dbUser as any).bio ?? "",
+                    major:         (dbUser as any).major ?? "",
+                    cohort:        (dbUser as any).cohort ?? "",
+                    year_of_study: (dbUser as any).year_of_study ?? "",
+                    gpa:           (dbUser as any).gpa?.toString() ?? "",
+                    skills:        dbUser.skills ?? [],
+                    school:        dbUser.school ?? "",
+                  }}
+                />
               </div>
             </div>
           )}
@@ -328,7 +359,7 @@ export default async function StudentDashboard({
               All four values are derived directly from dbOrders and dbUser.
               Nothing here is hardcoded.
           */}
-          <div style={s.statsRow}>
+          <div style={s.statsRow} className="stats-row">
 
             {/* Active Orders — count of pending + in_progress orders */}
             <div style={s.statCard}>
@@ -441,7 +472,7 @@ export default async function StudentDashboard({
               </div>
             ) : (
               <div style={s.table}>
-                <div style={s.tableHead}>
+                <div style={s.tableHead} className="table-head">
                   <span>Order ID</span>
                   <span>Gig</span>
                   <span>Buyer</span>
@@ -468,7 +499,7 @@ export default async function StudentDashboard({
                         <span>{formatStatus(order.status)}</span>
                       </div>
                       <span style={s.orderAmount}>{order.gig.price.toLocaleString()} RWF</span>
-                      <button style={s.deliverBtn}>Deliver</button>
+                      <DeliverButton orderId={order.order_id} studentEmail={userEmail} />
                     </div>
                   );
                 })}
@@ -517,7 +548,7 @@ export default async function StudentDashboard({
                 </Link>
               </div>
             ) : (
-              <div style={s.gigsGrid}>
+              <div style={s.gigsGrid} className="gigs-grid">
                 {dbGigs.map(gig => {
                   const activeGigOrders = gig.orders.length; // already filtered to active statuses
                   return (
@@ -555,54 +586,45 @@ export default async function StudentDashboard({
           </div>
 
           {/* ── REVIEW CANVAS ──────────────────────────────────
-              Reviews are fetched via a separate query once the reviews
-              table is wired up. For now shows the empty state which
-              explains the auto-populate behaviour to the student.
+              Dynamically populated from reviews in the database.
           */}
           <div style={s.section}>
-            <div style={s.sectionHead}>
-              <div>
-                <h2 style={s.sectionTitle}>Reviews from Companies</h2>
-                <p style={s.sectionDesc}>Automatically populated after each completed job</p>
-              </div>
-            </div>
-            <div style={s.emptyCanvas}>
-              <div style={s.emptyCanvasIcon}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D6D3D1" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={32} height={32}>
-                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                </svg>
-              </div>
-              <p style={s.emptyCanvasTitle}>No reviews yet</p>
-              <p style={s.emptyCanvasSub}>
-                Complete your first order and the company will be prompted to leave a review here automatically.
-              </p>
-            </div>
+            <ReviewsSection
+              reviews={dbReviews.map(r => ({
+                review_id:   r.review_id,
+                comment:     r.comment,
+                rating:      r.rating,
+                reviewer_id: r.reviewer_id,
+                gig_id:      r.gig_id,
+                reviewer: {
+                  full_name: r.reviewer.full_name,
+                  email:     r.reviewer.email,
+                  school:    r.reviewer.school,
+                },
+                gig: {
+                  title: r.gig.title,
+                },
+                created_at: r.created_at,
+              }))}
+              avgRating={avgRating}
+            />
           </div>
 
           {/* ── ZERO-TO-ONE PORTFOLIO ──────────────────────────
-              Static for now — will be replaced with a DB query once
-              the portfolio_projects table is added to the Prisma schema.
+              Dynamically populated from portfolio items in the database.
           */}
           <div style={s.section}>
-            <div style={s.sectionHead}>
-              <div>
-                <h2 style={s.sectionTitle}>Zero-to-One Portfolio</h2>
-                <p style={s.sectionDesc}>Personal projects, repos, and designs — visible to businesses even before your first review</p>
-              </div>
-              <button style={s.createBtn}>
-                <Icon.Plus /> Add Project
-              </button>
-            </div>
-            <div style={s.portfolioGrid}>
-              {PORTFOLIO.map(project => (
-                <PortfolioCard key={project.id} project={project} />
-              ))}
-              <button style={s.portfolioAddCard}>
-                <div style={s.portfolioAddIcon}><Icon.Plus /></div>
-                <p style={s.portfolioAddText}>Add a project</p>
-                <p style={s.portfolioAddSub}>GitHub, Behance, Figma, or a live link</p>
-              </button>
-            </div>
+            <PortfolioSection
+              studentEmail={userEmail}
+              items={dbPortfolio.map(item => ({
+                portfolio_id: item.portfolio_id,
+                title:        item.title,
+                link:         item.link,
+                description:  item.description,
+                type:         item.type,
+                tags:         item.tags,
+              }))}
+            />
           </div>
 
         </div>
@@ -643,6 +665,7 @@ const s: Record<string, React.CSSProperties> = {
   switchLink: { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, color: '#44403C', border: '1px solid #E7E5E4', marginRight: 6, textDecoration: 'none' },
   navLink: { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, color: '#44403C', textDecoration: 'none' },
   navBadge: { background: '#F97316', color: 'white', fontSize: '0.62rem', fontWeight: 800, borderRadius: 999, padding: '1px 6px' },
+  menuItem: { display: 'inline-flex', alignItems: 'center', border: 'none', background: 'transparent', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', marginLeft: 8 },
   avatar: { width: 32, height: 32, borderRadius: 999, background: '#0C0A09', color: 'white', border: 'none', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginLeft: 8 },
   main: { padding: '32px 0 80px' },
   container: { maxWidth: 1160, margin: '0 auto', padding: '0 28px' },

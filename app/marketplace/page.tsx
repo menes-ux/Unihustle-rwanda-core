@@ -451,10 +451,10 @@ export default function Marketplace() {
       </nav>
 
       {/* ── BODY ─────────────────────────────────────────────────── */}
-      <div style={s.body}>
+      <div style={s.body} className="marketplace-body">
 
         {/* ── SIDEBAR ────────────────────────────────────────────── */}
-        <aside style={s.sidebar}>
+        <aside style={s.sidebar} className="sidebar">
           <p style={s.sidebarHeading}>Filters</p>
 
           {/* University filter */}
@@ -636,11 +636,19 @@ export default function Marketplace() {
           {filtered.length > 0 ? (
             listView ? (
               <div style={s.listWrap}>
-                {filtered.map(gig => <GigRow key={gig.id} gig={gig} onBook={handleBookGig} />)}
+                {filtered.map(gig => (
+                  <Link key={gig.id} href={`/marketplace/gigs/${gig.id}`} style={{ textDecoration: 'none' }}>
+                    <GigRow gig={gig} onBook={handleBookGig} />
+                  </Link>
+                ))}
               </div>
             ) : (
-              <div style={s.gigsGrid}>
-                {filtered.map(gig => <GigCard key={gig.id} gig={gig} onBook={handleBookGig} />)}
+              <div style={s.gigsGrid} className="gigs-grid">
+                {filtered.map(gig => (
+                  <Link key={gig.id} href={`/marketplace/gigs/${gig.id}`} style={{ textDecoration: 'none' }}>
+                    <GigCard gig={gig} onBook={handleBookGig} />
+                  </Link>
+                ))}
               </div>
             )
           ) : (

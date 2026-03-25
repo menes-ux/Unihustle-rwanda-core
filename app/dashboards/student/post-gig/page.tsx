@@ -374,7 +374,7 @@ export default function PostGigPage() {
           )}
 
           {/* ── MAIN LAYOUT ────────────────────────────────────── */}
-          <div style={s.layout}>
+          <div style={s.layout} className="layout">
 
             {/* ── FORM ─────────────────────────────────────────── */}
             <form style={s.formCard} onSubmit={handleSubmit}>
@@ -455,7 +455,7 @@ export default function PostGigPage() {
               <div style={s.formSection}>
                 <h2 style={s.formSectionTitle}>Pricing & Delivery</h2>
 
-                <div style={s.twoCol}>
+                <div style={s.twoCol} className="two-col">
                   {/* Price */}
                   <div style={s.field}>
                     <label style={s.label}>Starting Price (RWF)</label>
@@ -556,7 +556,7 @@ export default function PostGigPage() {
             </form>
 
             {/* ── SIDEBAR ──────────────────────────────────────── */}
-            <aside style={s.sidebar}>
+            <aside style={s.sidebar} className="sidebar">
 
               {/* Tips card */}
               <div style={s.tipsCard}>

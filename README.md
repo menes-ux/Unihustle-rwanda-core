@@ -32,10 +32,20 @@ Access is restricted to verified ALU student accounts (`@alustudent.com`) on the
 unihustle/
 ├── app/
 │   ├── page.tsx                  # Landing page
-│   ├── auth/
-│   │   └── page.tsx              # Login and registration (role-based)
+│   ├── layout.tsx
+│   ├── global.css
+│   ├── favicon.ico
+│   ├── api/
+│   │   └── auth/                 # Account verification logic (OTP request)
+│   |   │   └── login/routes.ts
+│   |   │   └── request-code/routes.ts
+│   |   │   └── verify-code/routes.ts
+│   │   └── gigs/routes.ts
+│   │   └── orders/routes.ts
 │   ├── marketplace/
 │   │   └── page.tsx              # Public gig browse page
+│   ├── login/
+│   │   └── page.tsx
 │   └── dashboard/
 │       ├── student/
 │       │   └── page.tsx          # Student seller dashboard
@@ -43,9 +53,12 @@ unihustle/
 │           └── page.tsx          # Business buyer dashboard
 ├── components/                   # Shared UI components (planned)
 ├── lib/
-│   └── supabase.ts               # Supabase client configuration
+│   └── db.ts                     # Supabase client configuration
+│   └── sendEmail.ts
+│   └── session.ts
 ├── prisma/
 │   └── schema.prisma             # Database schema
+│   └── seed.ts                   # Sample data for testing
 └── public/
 ```
 

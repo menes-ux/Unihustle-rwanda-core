@@ -54,7 +54,7 @@ unihustle/
 ├── components/                   # Shared UI components (planned)
 ├── lib/
 │   └── db.ts                     # Supabase client configuration
-│   └── sendEmail.ts
+│   └── sendEmail.ts              # Sends OTP verification code to user's email
 │   └── session.ts
 ├── prisma/
 │   └── schema.prisma             # Database schema

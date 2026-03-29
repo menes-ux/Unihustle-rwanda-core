@@ -201,19 +201,9 @@ function AnimatedCounter({ target, decimal }: { target: string; decimal: boolean
 // ─── Page ────────────────────────────────────────────────────────────────────
  
 export default function HomePage() {
-  const navRef = useRef<HTMLElement>(null);
   const [activeFilter, setActiveFilter] = useState('All');
   const [activeMockCat, setActiveMockCat] = useState('All');
- 
-  // Sticky nav
-  useEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 40);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
- 
+
   // Scroll reveal
   useEffect(() => {
     const reveals = document.querySelectorAll<HTMLElement>('.reveal');
@@ -240,7 +230,7 @@ export default function HomePage() {
       </div>
  
       {/* NAV */}
-      <nav ref={navRef} id="nav">
+      <nav id="nav">
         <Link href="/" className="nav-logo">
           <div className="nav-logo-mark">
             <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>

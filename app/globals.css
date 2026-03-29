@@ -24,8 +24,8 @@ html { scroll-behavior: smooth; }
 body { font-family: var(--font-plus-jakarta), sans-serif; background: var(--white); color: var(--gray-900); -webkit-font-smoothing: antialiased; }
 
 /* ── NAV ── */
-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; padding: 0 52px; height: 68px; display: flex; align-items: center; justify-content: space-between; transition: background 0.3s, box-shadow 0.3s; }
-nav.scrolled { background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(0,0,0,0.07); }
+nav { position: fixed; top: 40px; left: 0; right: 0; z-index: 200; padding: 0 52px; height: 68px; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(0,0,0,0.07); transition: background 0.3s, box-shadow 0.3s; }
+
 .nav-logo { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; color: var(--black); text-decoration: none; }
 .nav-logo-mark { width: 32px; height: 32px; background: var(--orange); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
 .nav-logo-mark svg { width: 18px; height: 18px; fill: white; }
@@ -39,7 +39,7 @@ nav.scrolled { background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); 
 .btn-signup:hover { background: var(--orange-dark); transform: translateY(-1px); }
 
 /* ── PILOT BANNER ── */
-.pilot-banner { background: var(--black); color: white; text-align: center; padding: 10px 24px; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.02em; position: relative; z-index: 199; }
+.pilot-banner { background: var(--black); color: white; text-align: center; padding: 10px 24px; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.02em; position: fixed; top: 0; left: 0; right: 0; z-index: 199; }
 .pilot-banner span { color: var(--orange); font-weight: 700; }
 
 /* ── HERO ── */

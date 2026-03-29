@@ -232,11 +232,7 @@ export default function AuthPage() {
               {error}
             </div>
           )}
-          {devCodeHint && (
-            <div className="auth-email-badge" style={{ marginBottom: 12 }}>
-              <span>{devCodeHint}</span>
-            </div>
-          )}
+
 
           {/* ════════════════════════════════════════════════════════════════
               STEP 1 — Email & Role

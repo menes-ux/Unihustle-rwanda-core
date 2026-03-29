@@ -226,6 +226,7 @@ export default async function StudentDashboard() {
             <div style={s.logoMark}><Icon.Logo /></div>
             <span style={s.logoText}>UniHustle</span>
           </Link>
+          <div style={{ flex: 1 }}></div>
           <div style={s.navRight}>
             <Link href="#" style={s.switchLink}>
               <Icon.Switch /> Switch to Buying

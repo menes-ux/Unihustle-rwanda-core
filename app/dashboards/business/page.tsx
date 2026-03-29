@@ -5,6 +5,8 @@ import Link           from "next/link";
 
 import ReleaseButton from "./ReleaseButton";
 import BusinessChart from "@/components/BusinessChart";
+import { logout } from "@/app/dashboards/business/actions";
+import EditProfileButton from "./EditProfileButton";
 /**
  * Business Dashboard — Server Component
  *
@@ -114,6 +116,7 @@ export default async function BusinessDashboard() {
             </div>
             <span style={s.logoText}>UniHustle</span>
           </Link>
+          <div style={{ flex: 1 }}></div>
           <div style={s.navRight}>
             <Link href="/marketplace" style={s.switchLink}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
@@ -125,6 +128,11 @@ export default async function BusinessDashboard() {
             <div style={{ position: "relative" }}>
               <div style={s.avatar}>{initials}</div>
             </div>
+            <form action={logout} style={{ margin: 0 }}>
+              <button type="submit" style={{ ...s.menuItem, color: '#EF4444' }}>
+                Log Out
+              </button>
+            </form>
           </div>
         </div>
       </nav>
@@ -138,6 +146,7 @@ export default async function BusinessDashboard() {
             <div>
               <p style={s.greetingSub}>Good morning</p>
               <h1 style={s.greetingName}>{displayName}</h1>
+              {!hasName && <EditProfileButton businessEmail={userEmail} currentName={displayName} onUpdate={() => window.location.reload()} />}
             </div>
             <Link href="/marketplace" style={s.postJobBtn}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" width={14} height={14}>

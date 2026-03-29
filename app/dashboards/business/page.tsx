@@ -72,12 +72,11 @@ export default async function BusinessDashboard() {
     : 0;
 
   // ── Display name ────────────────────────────────────────────────────────────
-  const hasName     = dbUser.full_name && dbUser.full_name !== "EMPTY";
-  const displayName = hasName
+  // Businesses choose their enterprise name via full_name field
+  const hasEnterpriseName = dbUser.full_name && dbUser.full_name !== "EMPTY";
+  const displayName = hasEnterpriseName
     ? dbUser.full_name
-    : dbUser.email.split("@")[0].split(".").map(
-        (p: string) => p.charAt(0).toUpperCase() + p.slice(1)
-      ).join(" ");
+    : "";
 
   const initials = getInitials(dbUser.full_name ?? dbUser.email);
 
@@ -145,8 +144,8 @@ export default async function BusinessDashboard() {
           <div style={s.greeting}>
             <div>
               <p style={s.greetingSub}>Good morning</p>
-              <h1 style={s.greetingName}>{displayName}</h1>
-              {!hasName && <EditProfileButton businessEmail={userEmail} currentName={displayName} onUpdate={() => window.location.reload()} />}
+              <h1 style={s.greetingName}>{displayName || "Enterprise"}</h1>
+              <EditProfileButton businessEmail={userEmail} currentName={displayName} />
             </div>
             <Link href="/marketplace" style={s.postJobBtn}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" width={14} height={14}>

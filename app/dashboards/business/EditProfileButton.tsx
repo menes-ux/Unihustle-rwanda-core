@@ -1,31 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import { updateBusinessName } from "@/app/dashboards/business/actions";
 
 interface Props {
   businessEmail: string;
   currentName: string;
-  onUpdate: () => void;
 }
 
-export default function EditProfileButton({ businessEmail, currentName, onUpdate }: Props) {
+export default function EditProfileButton({ businessEmail, currentName }: Props) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(currentName);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
+    if (!name.trim()) {
+      setError("Enterprise name cannot be empty");
+      return;
+    }
+
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/user/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: businessEmail, full_name: name }),
-      });
-      if (!res.ok) throw new Error("Failed to update");
-      onUpdate();
+      await updateBusinessName(businessEmail, name);
       setOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error');
+      setError(err instanceof Error ? err.message : 'Failed to update');
     } finally {
       setLoading(false);
     }
@@ -46,7 +47,7 @@ export default function EditProfileButton({ businessEmail, currentName, onUpdate
         color: '#44403C',
         cursor: 'pointer'
       }}>
-        Edit Name
+        Edit Enterprise Name
       </button>
       {open && (
         <div style={{
@@ -68,11 +69,11 @@ export default function EditProfileButton({ businessEmail, currentName, onUpdate
             maxWidth: 400,
             width: '90%'
           }}>
-            <h3 style={{ margin: 0, marginBottom: 16, fontSize: '1.1rem', fontWeight: 700 }}>Edit Business Name</h3>
+            <h3 style={{ margin: 0, marginBottom: 16, fontSize: '1.1rem', fontWeight: 700 }}>Set Enterprise Name</h3>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Business Name"
+              placeholder="Enterprise Name"
               style={{
                 width: '100%',
                 padding: '10px',
@@ -82,8 +83,16 @@ export default function EditProfileButton({ businessEmail, currentName, onUpdate
                 marginBottom: 16
               }}
             />
+            {error && (
+              <p style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: 16, margin: 0 }}>
+                {error}
+              </p>
+            )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setOpen(false)} style={{
+              <button onClick={() => {
+                setOpen(false);
+                setError(null);
+              }} style={{
                 padding: '8px 16px',
                 border: '1px solid #E7E5E4',
                 borderRadius: 8,

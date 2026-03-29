@@ -226,7 +226,6 @@ export default async function StudentDashboard() {
             <div style={s.logoMark}><Icon.Logo /></div>
             <span style={s.logoText}>UniHustle</span>
           </Link>
-          <div style={{ flex: 1 }}></div>
           <div style={s.navRight}>
             <Link href="#" style={s.switchLink}>
               <Icon.Switch /> Switch to Buying
@@ -662,8 +661,8 @@ const s: Record<string, React.CSSProperties> = {
   logo: { display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' },
   logoMark: { width: 28, height: 28, background: '#F97316', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   logoText: { fontWeight: 800, fontSize: '0.95rem', color: '#0C0A09', letterSpacing: '-0.02em' },
-  navRight: { display: 'flex', alignItems: 'center', gap: 4 },
-  switchLink: { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, color: '#44403C', border: '1px solid #E7E5E4', marginRight: 6, textDecoration: 'none' },
+  navRight: { display: 'flex', alignItems: 'center', gap: 12 },
+  switchLink: { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, color: '#44403C', border: '1px solid #E7E5E4', marginRight: 6, marginLeft: 32, textDecoration: 'none' },
   navLink: { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, color: '#44403C', textDecoration: 'none' },
   navBadge: { background: '#F97316', color: 'white', fontSize: '0.62rem', fontWeight: 800, borderRadius: 999, padding: '1px 6px' },
   menuItem: { display: 'inline-flex', alignItems: 'center', border: 'none', background: 'transparent', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', marginLeft: 8 },

@@ -116,7 +116,7 @@ export default async function BusinessDashboard() {
             </div>
             <span style={s.logoText}>UniHustle</span>
           </Link>
-          <div style={{ flex: 1 }}></div>
+          {/* Removed flex: 1 spacer to fix nav bar spacing */}
           <div style={s.navRight}>
             <Link href="/marketplace" style={s.switchLink}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
@@ -606,8 +606,8 @@ const s: Record<string, React.CSSProperties> = {
   logo: { display: "flex", alignItems: "center", gap: 8, textDecoration: "none" },
   logoMark: { width: 28, height: 28, background: "#F97316", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" },
   logoText: { fontWeight: 800, fontSize: "0.95rem", color: "#0C0A09", letterSpacing: "-0.02em" },
-  navRight: { display: "flex", alignItems: "center", gap: 4 },
-  switchLink: { display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: "0.82rem", fontWeight: 600, color: "#44403C", border: "1px solid #E7E5E4", marginRight: 6, textDecoration: "none" },
+  navRight: { display: "flex", alignItems: "center", gap: 12 },
+  switchLink: { display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: "0.82rem", fontWeight: 600, color: "#44403C", border: "1px solid #E7E5E4", marginRight: 6, marginLeft: 32, textDecoration: "none" },
   navLink: { padding: "6px 12px", borderRadius: 8, fontSize: "0.82rem", fontWeight: 600, color: "#44403C", textDecoration: "none" },
   avatar: { width: 32, height: 32, borderRadius: 999, background: "#0C0A09", color: "white", border: "none", fontSize: "0.62rem", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 8 },
   main: { padding: "36px 0 80px" },

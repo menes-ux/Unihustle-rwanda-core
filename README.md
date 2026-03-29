@@ -26,6 +26,7 @@ Team Riptide — Group 4
 - [System Architecture](#system-architecture)
 - [Tech Stack](#tech-stack)
 - [Database Schema](#database-schema)
+- [AI Assistance](#ai-assistance)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
 - [Project Structure](#project-structure)
@@ -153,7 +154,7 @@ UniHustle addresses this by being:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Data flow:** Browser makes an HTTP request, Next.js middleware checks the session cookie, Server Component reads the session and queries Prisma, Prisma queries PostgreSQL on Supabase, data is rendered server-side and returned as HTML, Client Components handle interactive state (modals, buttons).
+**Data flow:** Browser makes an HTTP request → Next.js middleware checks the session cookie → Server Component reads the session and queries Prisma → Prisma queries PostgreSQL on Supabase → data is rendered server-side and returned as HTML → Client Components handle interactive state (modals, buttons).
 
 ---
 
@@ -251,6 +252,28 @@ The full schema lives at `prisma/schema.prisma`. Below is a summary of all model
 
 ---
 
+## AI Assistance
+
+This project used AI tools at specific points in the development process — not as a replacement for the team's engineering work, but as a support layer for research, structure, and debugging.
+
+### Google Gemini
+
+Gemini was used early in the project during the **research and ideation phase**. The team used it to explore the problem space — asking questions about youth unemployment in Rwanda, understanding how platforms like Fiverr and Upwork are structured, and getting initial suggestions on what features a student-focused freelance marketplace might need. It helped us structure our literature review and frame the problem statement before any code was written.
+
+### Claude (Anthropic)
+
+Claude was used during **development** as a coding assistant — primarily for debugging tricky issues, understanding Next.js 15 App Router patterns (which are relatively new and sparsely documented), and getting suggestions on how to structure Prisma queries and Server Actions cleanly. A few of the more verbose sections of this README were drafted with Claude's help and then edited by the team.
+
+### How we used AI responsibly
+
+- All final code was written, understood, and reviewed by team members — we did not copy-paste AI-generated code without reading and adapting it.
+- AI was never used to generate test results, fabricate research data, or write sections of the academic report without human review and editing.
+- The core architecture decisions, database schema design, UI/UX choices, and feature scoping were all made by the team, with AI consulted as a sounding board rather than a decision-maker.
+
+We treated AI tools the same way we treated documentation and Stack Overflow — useful references that speed up the work, but not a substitute for understanding what you are building.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -338,7 +361,7 @@ DIRECT_URL="postgresql://postgres.[your-project-ref]:[password]@aws-0-[region].p
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-**Where to find these values:** Go to your Supabase project, then Settings, then Database, then Connection string. Copy the Transaction URL into `DATABASE_URL` and the Session URL into `DIRECT_URL`.
+**Where to find these values:** Go to your Supabase project → Settings → Database → Connection string. Copy the Transaction URL into `DATABASE_URL` and the Session URL into `DIRECT_URL`.
 
 ---
 
@@ -607,6 +630,8 @@ The project was tested across four levels. Full tables are documented in Chapter
 - Vercel for Next.js and deployment tooling
 - Recharts for the business dashboard analytics visualizations
 - Plus Jakarta Sans (Google Fonts) for the typography
+- Google Gemini for early-stage research support and problem framing
+- Claude (Anthropic) for development assistance, debugging, and documentation drafting
 
 ---
 

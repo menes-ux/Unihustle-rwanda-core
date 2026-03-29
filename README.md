@@ -11,8 +11,8 @@ Team Riptide — Group 4
 
 | Resource | Link |
 |---|---|
-| Live Application | `[https://unihustle-rwanda-core-ll86.vercel.app/]` |
-| Demo Video | `[link to be added]` |
+| Live Application | https://unihustle-rwanda-core-ll86.vercel.app/ |
+| Demo Video | https://www.youtube.com/watch?v=sZkBrEzjUC4 |
 | GitHub Repository | https://github.com/menes-ux/Unihustle-rwanda-core |
 
 ---

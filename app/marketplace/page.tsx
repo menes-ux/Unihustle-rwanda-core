@@ -270,6 +270,24 @@ export default function Marketplace() {
   const [gigs, setGigs]                   = useState<Gig[]>(SEED_GIGS);
   const [actionMessage, setActionMessage] = useState('');
   const [buyerEmail, setBuyerEmail]       = useState('');
+  const [session, setSession]             = useState<{ logged_in: boolean; email?: string; role?: string } | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+
+  // Fetch session on mount
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const response = await fetch('/api/session');
+        const data = await response.json();
+        setSession(data);
+      } catch {
+        setSession({ logged_in: false });
+      } finally {
+        setSessionLoading(false);
+      }
+    };
+    void fetchSession();
+  }, []);
 
   useEffect(() => {
     setBuyerEmail(new URLSearchParams(window.location.search).get('email') ?? '');
@@ -409,28 +427,42 @@ export default function Marketplace() {
           </div>
 
           <div style={s.navRight}>
-            <Link href="/login" style={s.navLoginBtn}>Log In</Link>
-            <Link href="/login" style={s.navSignupBtn}>Sign Up Free</Link>
-            <div style={{ position: 'relative' }}>
-              <button style={s.avatar} onClick={() => setProfileOpen(v => !v)}>DA</button>
-              {profileOpen && (
-                <div style={s.profileMenu}>
-                  <div style={s.profileHead}>
-                    <div style={{ ...s.profileAvatar, background: '#10B981' }}>DA</div>
-                    <div>
-                      <div style={s.profileName}>David Achibiri</div>
-                      <div style={s.profileSub}>ALU Rwanda · Class of 2025</div>
+            {session && session.logged_in ? (
+              <>
+                <Link href={session.role === 'business' ? '/dashboards/business' : '/dashboards/student'} style={s.dashboardLink}>
+                  {session.role === 'business' ? 'My Dashboard' : 'My Profile'}
+                </Link>
+                <div style={{ position: 'relative' }}>
+                  <button style={s.avatar} onClick={() => setProfileOpen(v => !v)}>
+                    {session.email?.slice(0, 2).toUpperCase() ?? 'U'}
+                  </button>
+                  {profileOpen && (
+                    <div style={s.profileMenu}>
+                      <div style={s.profileHead}>
+                        <div style={{ ...s.profileAvatar, background: '#0C0A09' }}>
+                          {session.email?.slice(0, 2).toUpperCase() ?? 'U'}
+                        </div>
+                        <div>
+                          <div style={s.profileName}>{session.email}</div>
+                          <div style={s.profileSub}>{session.role === 'business' ? 'Business' : 'Student'}</div>
+                        </div>
+                      </div>
+                      <div style={s.menuDivider} />
+                      <form action="/api/auth/logout" method="POST" style={{ margin: 0 }}>
+                        <button type="submit" style={{ ...s.menuItem, color: '#EF4444' }}>
+                          Log Out
+                        </button>
+                      </form>
                     </div>
-                  </div>
-                  <div style={s.menuDivider} />
-                  {['My Dashboard', 'My Orders', 'Settings'].map(item => (
-                    <button key={item} style={s.menuItem}>{item}</button>
-                  ))}
-                  <div style={s.menuDivider} />
-                  <button style={{ ...s.menuItem, color: '#EF4444' }}>Log Out</button>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <>
+                <Link href="/login" style={s.navLoginBtn}>Log In</Link>
+                <Link href="/login" style={s.navSignupBtn}>Sign Up Free</Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -710,6 +742,7 @@ const s: Record<string, React.CSSProperties> = {
   navRight: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 },
   navLoginBtn: { padding: '7px 16px', borderRadius: 8, border: '1.5px solid #E7E5E4', background: 'white', fontSize: '0.82rem', fontWeight: 600, color: '#44403C' },
   navSignupBtn: { padding: '7px 16px', borderRadius: 8, background: '#F97316', color: 'white', border: 'none', fontSize: '0.82rem', fontWeight: 700 },
+  dashboardLink: { padding: '7px 16px', borderRadius: 8, background: '#F97316', color: 'white', border: 'none', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'inline-block' },
   avatar: { width: 32, height: 32, borderRadius: 999, background: '#0C0A09', color: 'white', border: 'none', fontSize: '0.62rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginLeft: 4 },
   profileMenu: { position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.10)', border: '1px solid #E7E5E4', minWidth: 210, padding: '6px 0', zIndex: 200 },
   profileHead: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px' },

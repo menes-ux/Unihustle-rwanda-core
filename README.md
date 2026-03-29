@@ -1,53 +1,253 @@
 # UniHustle Rwanda
 
-A student-focused freelance marketplace connecting ALU Rwanda students with local businesses and peers. Built as a BSc. Software Engineering Foundations project at the African Leadership University, January 2026 cohort.
+**A dual-interface freelance marketplace connecting ALU students with Kigali businesses.**
+
+BSc. Software Engineering — Foundations Project | African Leadership University | January 2026  
+Team Riptide — Group 4
+
+---
+
+## Live Demo
+
+| Resource | Link |
+|---|---|
+| Live Application | `[link to be added after deployment]` |
+| Demo Video | `[link to be added]` |
+| GitHub Repository | https://github.com/menes-ux/Unihustle-rwanda-core |
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [The Problem](#the-problem)
+- [Our Solution](#our-solution)
+- [Features](#features)
+- [System Architecture](#system-architecture)
+- [Tech Stack](#tech-stack)
+- [Database Schema](#database-schema)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [API Reference](#api-reference)
+- [Testing](#testing)
+- [Team](#team)
+- [Acknowledgements](#acknowledgements)
 
 ---
 
 ## Overview
 
-UniHustle Rwanda is a two-sided marketplace platform modeled after industry-standard freelance platforms. It enables ALU students to monetize their skills by offering services (gigs) to businesses and peers, while allowing businesses and individuals to post jobs and hire directly from the student talent pool.
+UniHustle Rwanda is a full-stack web platform built to solve a specific, measurable problem: university students in Rwanda — particularly at ALU — have no dedicated, trusted channel to find flexible freelance work, and local businesses have no affordable way to access verified student talent.
 
-Access is restricted to verified ALU student accounts (`@alustudent.com`) on the student side, ensuring a trusted and academically grounded community.
+The platform operates as a two-sided marketplace. Students create service listings (gigs), and businesses browse, book, and manage orders through separate role-based dashboards. Every account is tied to a verified institutional email, which is what distinguishes UniHustle from global platforms like Fiverr where anyone can register.
+
+---
+
+## The Problem
+
+Over 70% of Rwandan youth face difficulty entering the labor market after graduation (World Bank, 2022). Students specifically struggle with:
+
+- No centralized platform for short-term, flexible work that fits academic schedules
+- Dependence on informal networks and word-of-mouth for job opportunities
+- Inability to compete on global platforms (Fiverr, Upwork) due to high competition, complex onboarding, and service fees of 10–20%
+- No institutional verification, which reduces trust from employers
+
+On the employer side, small and medium businesses in Kigali face:
+
+- High cost of traditional agency hiring (typically 3x the actual freelancer rate)
+- No easy way to find affordable, skilled, and flexible talent for short-term projects
+
+---
+
+## Our Solution
+
+UniHustle addresses this by being:
+
+**Localized** — restricted to verified `@alustudent.com` emails for students, with plans to expand to all Rwandan universities.
+
+**Trust-first** — every student profile shows a verified badge, cohort year, GPA, and hustle score built from completed order history.
+
+**Dual-interface** — students and businesses each have a dedicated dashboard with analytics, order management, and profile tools built specifically for their role.
+
+**Zero-friction auth** — OTP-based authentication with no passwords. Enter your email, get a 6-digit code, and you are in.
+
+---
+
+## Features
+
+### Student Side
+
+| Feature | Description |
+|---|---|
+| OTP Authentication | Email-verified login restricted to `@alustudent.com` |
+| Student Dashboard | Real-time stats — active orders, total earnings, completed jobs, GPA badge |
+| Gig Management | Create, edit, and delete service listings with delivery time, revisions, and skill tags |
+| Order Delivery | One-click delivery with automatic hustle score increment |
+| Portfolio | Add GitHub, Figma, Behance, and live project links visible before first review |
+| Reviews | Automatically populated after each completed order |
+| Edit Profile | Update bio, major, cohort, year of study, GPA, and skills inline |
+| Post-Gig Form | Full form with live preview showing how the gig will appear in the marketplace |
+
+### Business Side
+
+| Feature | Description |
+|---|---|
+| Business Dashboard | Active hires, total spent, unique students hired — all live from the DB |
+| Analytics | Monthly spend vs agency estimate chart, university breakdown, top skills hired |
+| ROI Calculator | Shows savings vs traditional agency rates (estimated at 3.1x student rate) |
+| Active Hires Table | Real-time order status with Release Payment button |
+| Marketplace Browse | Gig cards with direct booking flow from the business dashboard |
+
+### Marketplace
+
+| Feature | Description |
+|---|---|
+| Gig Listings | Filterable by category, university, price range, delivery time, and cohort access |
+| Gig Detail Page | Full gig info, seller profile, reviews, and Book button for business users |
+| Booking Flow | End-to-end: business clicks Book, order is created, student sees it immediately |
+| Cohort Access | Gigs from expired cohorts are visible but read-only, preserving portfolio value |
+
+### Authentication and Security
+
+| Feature | Description |
+|---|---|
+| OTP Flow | 6-digit code generated, stored with 10-minute expiry, one-time use |
+| Cookie Session | Native Next.js 15 `cookies()` — HttpOnly, SameSite: lax, 7-day maxAge |
+| Route Protection | Middleware guards `/dashboards/*` and `/marketplace/*` — unauthenticated users redirect to `/login` |
+| Role Separation | Business users cannot access student dashboard routes and vice versa |
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        BROWSER (Client)                         │
+│                                                                 │
+│   Landing Page    Marketplace     Student Dashboard             │
+│   Auth Page       Gig Detail      Business Dashboard            │
+│   Post Gig Form                                                 │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ HTTP / Cookie Session
+┌────────────────────────────▼────────────────────────────────────┐
+│                    NEXT.JS 15 APP ROUTER                        │
+│                                                                 │
+│   Server Components        Client Components                    │
+│   (data fetching, auth)    (interactive buttons, modals)        │
+│                                                                 │
+│   Server Actions           API Route Handlers                   │
+│   (deliver, edit profile,  (/api/auth/*, /api/gigs,             │
+│    add portfolio item)      /api/orders, /api/orders/release)   │
+│                                                                 │
+│   Middleware               Cookie Session (lib/session.ts)      │
+│   (route protection)       (HttpOnly, 7-day, SameSite: lax)    │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ Prisma ORM
+┌────────────────────────────▼────────────────────────────────────┐
+│                   SUPABASE / POSTGRESQL                         │
+│                                                                 │
+│   User    Gig    Order    Review    PortfolioItem               │
+│                                                                 │
+│   Hosted on Supabase with pgBouncer for connection pooling      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Data flow:** Browser makes an HTTP request, Next.js middleware checks the session cookie, Server Component reads the session and queries Prisma, Prisma queries PostgreSQL on Supabase, data is rendered server-side and returned as HTML, Client Components handle interactive state (modals, buttons).
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS + Inline styles |
-| Database | PostgreSQL (via Supabase) |
-| ORM | Prisma |
-| Authentication | Supabase Auth |
-| Fonts | Plus Jakarta Sans (Google Fonts) |
+| Layer | Technology | Purpose |
+|---|---|---|
+| Frontend | Next.js 15 (App Router), React 18, TypeScript | Server Components, routing, UI |
+| Styling | Inline styles + CSS media queries via `<style>` tags | Design system, responsiveness |
+| Backend | Next.js API Route Handlers, Server Actions | REST endpoints, DB mutations |
+| ORM | Prisma | Type-safe database access, migrations |
+| Database | PostgreSQL via Supabase | Primary data store |
+| Auth | Native Next.js `cookies()` | HttpOnly session management |
+| Charts | Recharts | Business dashboard analytics |
+| Font | Plus Jakarta Sans | Typography |
+| Package Manager | npm | Dependency management |
+| Code Quality | ESLint | Static analysis |
+| Version Control | Git / GitHub | Collaboration |
 
 ---
 
-## Project Structure
+## Database Schema
 
-```
-unihustle/
-├── app/
-│   ├── page.tsx                  # Landing page
-│   ├── auth/
-│   │   └── page.tsx              # Login and registration (role-based)
-│   ├── marketplace/
-│   │   └── page.tsx              # Public gig browse page
-│   └── dashboard/
-│       ├── student/
-│       │   └── page.tsx          # Student seller dashboard
-│       └── business/
-│           └── page.tsx          # Business buyer dashboard
-├── components/                   # Shared UI components (planned)
-├── lib/
-│   └── supabase.ts               # Supabase client configuration
-├── prisma/
-│   └── schema.prisma             # Database schema
-└── public/
-```
+The full schema lives at `prisma/schema.prisma`. Below is a summary of all models and their key fields.
+
+### User
+
+| Field | Type | Description |
+|---|---|---|
+| user_id | Int (PK) | Auto-increment primary key |
+| email | String (unique) | Institutional email used as login identifier |
+| full_name | String | Display name set on first dashboard load |
+| role | Enum | student or business — controls which dashboard the user sees |
+| is_verified | Boolean | Set to true after first successful OTP login |
+| hustle_score | Int | Platform reputation score, increments on delivery |
+| skills | String[] | Skill tags shown on the student profile card |
+| bio | String? | Profile bio |
+| major | String? | Academic major |
+| cohort | String? | e.g. "Class of 2026" |
+| year_of_study | String? | e.g. "Year 2" |
+| gpa | Float? | Shown with colour-coded Dean's List badge |
+| school | String | University — defaults to "ALU" |
+
+### Gig
+
+| Field | Type | Description |
+|---|---|---|
+| gig_id | Int (PK) | Auto-increment primary key |
+| student_id | Int (FK) | References User |
+| title | String | Gig title — must start with "I will..." |
+| category | String | Development, Design, Writing, Marketing, etc. |
+| price | Int | Starting price in RWF |
+| status | Enum | active or paused — controls marketplace visibility |
+| description | String? | Full gig description |
+| delivery_days | Int | Default 3 |
+| revisions | Int | Default 2 |
+| tags | String[] | Skill tags for marketplace search |
+
+### Order
+
+| Field | Type | Description |
+|---|---|---|
+| order_id | Int (PK) | Auto-increment primary key |
+| gig_id | Int (FK) | References Gig |
+| buyer_id | Int (FK) | References User (business account) |
+| status | Enum | pending / in_progress / completed / cancelled |
+| deadline | DateTime? | Calculated from gig.delivery_days at booking time |
+| created_at | DateTime | Auto-set on creation |
+| updated_at | DateTime | Auto-updated on change |
+
+### Review
+
+| Field | Type | Description |
+|---|---|---|
+| review_id | Int (PK) | Auto-increment |
+| order_id | Int (unique FK) | One review per order |
+| student_id | Int (FK) | The student who received the review |
+| reviewer_id | Int (FK) | The business that left the review |
+| gig_id | Int (FK) | Which gig the review is about |
+| rating | Int | 1 to 5 stars |
+| comment | String | Written review |
+| created_at | DateTime | Auto-set |
+
+### PortfolioItem
+
+| Field | Type | Description |
+|---|---|---|
+| portfolio_id | Int (PK) | Auto-increment |
+| student_id | Int (FK) | References User |
+| title | String | Project name |
+| link | String | URL to GitHub, Figma, live site, or Behance |
+| description | String? | Short project description |
+| type | String | GitHub / Figma / Live / Behance |
+| tags | String[] | Tech stack tags |
 
 ---
 
@@ -56,161 +256,360 @@ unihustle/
 ### Prerequisites
 
 - Node.js 18 or higher
-- npm or yarn
+- npm 9 or higher
 - A Supabase project with a PostgreSQL database
+- Git
 
 ### Installation
 
-Clone the repository and install dependencies:
+**1. Clone the repository**
 
 ```bash
-git clone https://github.com/your-org/unihustle-rwanda.git
-cd unihustle-rwanda
+git clone https://github.com/menes-ux/Unihustle-rwanda-core.git
+cd Unihustle-rwanda-core
+```
+
+**2. Install dependencies**
+
+```bash
 npm install
 ```
 
-### Environment Variables
+**3. Set up environment variables**
 
-Create a `.env.local` file in the root directory with the following variables:
+Copy the example file and fill in your values:
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-DATABASE_URL=your_postgresql_connection_string
+```bash
+cp .env.example .env
 ```
 
-### Run the Development Server
+See [Environment Variables](#environment-variables) below for the full list.
+
+**4. Run database migrations**
+
+```bash
+npx prisma migrate dev --name init
+npx prisma generate
+```
+
+**5. Seed the database with test data**
+
+```bash
+npx ts-node prisma/seed.ts
+```
+
+This creates 6 student accounts, 3 business accounts, 9 gigs across all categories, 4 orders in various statuses, and sample reviews.
+
+**6. Start the development server**
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+The application will be running at `http://localhost:3000`.
 
-### Database Setup
+### Test Accounts
 
-Push the Prisma schema to your Supabase database:
+After seeding, you can log in with the following accounts. Enter the email on the login page, then check the terminal — in development mode the OTP code is printed to the console instead of being sent by email.
 
-```bash
-npx prisma db push
-npx prisma generate
-```
-
----
-
-## User Roles
-
-The platform supports two distinct user roles, selected at registration.
-
-**Student**
-- Register with a verified `@alustudent.com` email address
-- Create and manage service listings (gigs)
-- Receive and fulfill orders from buyers
-- Apply to business job postings
-- Access the student seller dashboard
-
-**Business**
-- Register with a company work email
-- Browse and book student gigs directly
-- Post job listings and review applicants
-- Manage active hires and release payments
-- Access the business buyer dashboard
-
----
-
-## Application Flow
-
-```
-Landing Page
-    |
-    ├── Marketplace (public, no login required)
-    |       |
-    |       └── Browse gigs, filter by category, price, rating, delivery time
-    |
-    └── Auth Page (Login / Register)
-            |
-            ├── Student Login  -->  Student Dashboard
-            └── Business Login -->  Business Dashboard
-```
-
----
-
-## Design System
-
-Figma file: https://www.figma.com/design/KFMF6vAH1lGwIPpNkUjrPZ/UniHustle-designs?node-id=0-1&p=f&t=b98LY287834xZMXQ-0
-
-
-| Token | Value |
-|---|---|
-| Primary font | Plus Jakarta Sans |
-| Background | `#F5F5F4` |
-| Card background | `#FFFFFF` |
-| Card border | `1px solid #E7E5E4` |
-| Primary orange | `#F97316` |
-| Dark orange | `#EA580C` |
-| Near black | `#0C0A09` |
-| Muted text | `#A8A29E` |
-
-All UI components follow a flat, minimalist SaaS aesthetic. No gradients, no decorative elements. Orange is used exclusively for primary call-to-action buttons and active states.
-
----
-
-## Current Development Status
-
-| Page | Status | Notes |
+| Role | Email | What you can test |
 |---|---|---|
-| Landing page | Complete | Fully designed, static content |
-| Auth page | Complete | Login and register flows, role toggle |
-| Marketplace | Complete | Live filtering, sorting, search |
-| Student dashboard | Complete | Orders table, gig management |
-| Business dashboard | Complete | Hires table, job cards, browse panel |
-| Supabase auth integration | Pending | Role-based redirect on login |
-| Database schema | Pending | Prisma schema definition |
-| API routes | Pending | Gigs, orders, jobs endpoints |
-| Gig detail page | Pending | Full gig view with booking |
-| Order / checkout flow | Pending | Booking confirmation screen |
-| Create gig form | Pending | Student gig listing form |
-| Post a job form | Pending | Business job posting form |
+| Student | d.achibiri@alustudent.com | Full student dashboard, active orders, portfolio |
+| Student | m.adisso@alustudent.com | Student dashboard with completed orders and reviews |
+| Business | startupHub@example.com | Business dashboard with analytics and active hires |
+| Business | kigaliCreative@example.com | Business dashboard with no orders — tests empty states |
 
 ---
 
-## Roadmap
+## Environment Variables
 
-**Phase 1 — UI (Complete)**
-All core pages designed and implemented as static Next.js components with consistent design system and responsive layouts.
+Create a `.env` file in the project root with the following variables:
 
-**Phase 2 — Authentication (In Progress)**
-Supabase Auth integration, role-based registration, protected routes, and session management.
+```env
+# Supabase / PostgreSQL
+# The pooled connection URL for Prisma queries (via pgBouncer)
+DATABASE_URL="postgresql://postgres.[your-project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true"
 
-**Phase 3 — Database and API**
-Prisma schema for users, gigs, orders, and jobs. Full CRUD API routes using Next.js App Router server actions or route handlers.
+# The direct (non-pooled) connection URL for migrations
+DIRECT_URL="postgresql://postgres.[your-project-ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres"
 
-**Phase 4 — Transactions and Notifications**
-Order lifecycle management, delivery confirmation, payment release, and in-app notification system.
+# The public URL of your deployed application
+# Used for links in any future email templates
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+**Where to find these values:** Go to your Supabase project, then Settings, then Database, then Connection string. Copy the Transaction URL into `DATABASE_URL` and the Session URL into `DIRECT_URL`.
 
 ---
 
-## Academic Context
+## Project Structure
 
-- Institution: African Leadership University, Rwanda
-- Program: BSc. Software Engineering
-- Course: Foundations Project
-- Cohort: January 2026
-- Team: Riptide (Group 4)
+```
+unihustle-rwanda-core/
+│
+├── app/
+│   ├── page.tsx                          # Landing page
+│   ├── login/
+│   │   └── page.tsx                      # OTP auth page
+│   ├── marketplace/
+│   │   ├── page.tsx                      # Gig browse + filters
+│   │   └── gigs/
+│   │       └── [id]/
+│   │           ├── page.tsx              # Gig detail + booking CTA
+│   │           └── BookingButton.tsx     # Client: creates order on click
+│   ├── dashboards/
+│   │   ├── student/
+│   │   │   ├── page.tsx                  # Student dashboard (Server Component)
+│   │   │   ├── actions.ts                # Server Actions: deliver, edit profile, portfolio
+│   │   │   ├── DeliverButton.tsx         # Client: delivers order
+│   │   │   ├── EditProfileButton.tsx     # Client: opens edit profile modal
+│   │   │   ├── EditProfileModal.tsx      # Client: edit profile form
+│   │   │   ├── AddProjectModal.tsx       # Client: add portfolio item
+│   │   │   ├── PortfolioSection.tsx      # Client: portfolio grid + delete
+│   │   │   ├── ReviewsSection.tsx        # Server: reviews from DB
+│   │   │   └── post-gig/
+│   │   │       └── page.tsx              # Post a Gig form (Client)
+│   │   └── business/
+│   │       ├── page.tsx                  # Business dashboard (Server Component)
+│   │       └── ReleaseButton.tsx         # Client: releases payment
+│   └── api/
+│       ├── auth/
+│       │   ├── request-code/route.ts     # POST: generate + store OTP
+│       │   └── verify-code/route.ts      # POST: verify OTP + set session cookie
+│       ├── gigs/
+│       │   └── route.ts                  # GET: list active gigs | POST: create gig
+│       └── orders/
+│           ├── route.ts                  # POST: create order (booking)
+│           └── release/
+│               └── route.ts             # POST: business releases payment
+│
+├── lib/
+│   ├── db.ts                             # Prisma client singleton
+│   └── session.ts                        # createSession / getSession / clearSession
+│
+├── middleware.ts                          # Route protection + role-based redirect
+│
+├── prisma/
+│   ├── schema.prisma                      # Full data model
+│   ├── migrations/                        # Migration history
+│   └── seed.ts                            # Test data seed script
+│
+└── public/                                # Static assets
+```
+
+---
+
+## API Reference
+
+All API routes are located under `app/api/`. Every protected route reads the session cookie and returns `401` if the user is not authenticated.
+
+### POST /api/auth/request-code
+
+Generates a 6-digit OTP and stores it with a 10-minute expiry. Creates the user record if this is their first login.
+
+**Request body:**
+
+```json
+{
+  "email": "d.achibiri@alustudent.com",
+  "role": "student"
+}
+```
+
+**Validation:** `email` and `role` are required. If `role` is `student`, the email must end with `@alustudent.com`.
+
+| Status | Body | Meaning |
+|---|---|---|
+| 200 | `{ "success": true }` | OTP generated and stored |
+| 400 | `{ "error": "..." }` | Missing fields or invalid student email |
+| 500 | `{ "error": "..." }` | Server error |
+
+---
+
+### POST /api/auth/verify-code
+
+Validates the submitted OTP. On success, writes the session cookie and returns the user's role for client-side redirect.
+
+**Request body:**
+
+```json
+{
+  "email": "d.achibiri@alustudent.com",
+  "code": "482910"
+}
+```
+
+| Status | Body | Meaning |
+|---|---|---|
+| 200 | `{ "role": "student" }` | Verified — session cookie set |
+| 401 | `{ "error": "Incorrect code..." }` | Wrong OTP |
+| 401 | `{ "error": "This code has expired..." }` | Expired OTP |
+| 404 | `{ "error": "No account found..." }` | Email not in DB |
+
+---
+
+### GET /api/gigs
+
+Returns all active gigs with seller information and active order count. Used by the marketplace page.
+
+---
+
+### POST /api/gigs
+
+Creates a new gig. Requires an active student session.
+
+**Request body:**
+
+```json
+{
+  "title": "I will build a REST API with Node.js and Express",
+  "category": "Development",
+  "description": "Full API with authentication, CRUD, and documentation.",
+  "price": 40000,
+  "delivery_days": 5,
+  "revisions": 2,
+  "tags": ["Node.js", "Express", "API"]
+}
+```
+
+| Status | Body | Meaning |
+|---|---|---|
+| 201 | `{ "gig_id": 12 }` | Gig created |
+| 400 | `{ "error": "Missing required fields" }` | Incomplete body |
+| 401 | `{ "error": "..." }` | Not authenticated |
+| 403 | `{ "error": "..." }` | Not a student account |
+
+---
+
+### POST /api/orders
+
+Creates a new order when a business books a gig. Calculates the deadline from `gig.delivery_days`. Requires an active business session.
+
+**Request body:**
+
+```json
+{
+  "gig_id": 7,
+  "delivery_days": 5
+}
+```
+
+| Status | Body | Meaning |
+|---|---|---|
+| 201 | `{ "order_id": 34 }` | Order created with status `pending` |
+| 400 | `{ "error": "This gig is not currently available" }` | Gig is paused |
+| 400 | `{ "error": "You cannot book your own gig" }` | Student tried to self-book |
+| 403 | `{ "error": "Only business accounts can book gigs" }` | Wrong role |
+
+---
+
+### POST /api/orders/release
+
+Marks an order as `completed` from the business side. Verifies buyer ownership before updating.
+
+**Request body:**
+
+```json
+{ "order_id": 34 }
+```
+
+| Status | Body | Meaning |
+|---|---|---|
+| 200 | `{ "success": true }` | Order marked completed |
+| 404 | `{ "error": "Order not found or not owned by this account" }` | Ownership check failed |
+| 401 | `{ "error": "Not authenticated" }` | No session |
+
+---
+
+### Server Actions
+
+These are Next.js Server Actions called directly from Client Components. They live in `app/dashboards/student/actions.ts`.
+
+| Action | Parameters | Effect |
+|---|---|---|
+| `deliverOrder` | `orderId`, `studentEmail` | Sets order to `completed`, increments `hustle_score` by 10, revalidates dashboard |
+| `updateStudentProfile` | `studentEmail`, `data` | Updates bio, major, cohort, year, GPA, skills |
+| `addPortfolioItem` | `studentEmail`, `data` | Creates a new PortfolioItem row |
+| `deletePortfolioItem` | `portfolioId`, `studentEmail` | Deletes item after verifying ownership |
+| `logout` | — | Clears session cookie, redirects to `/login` |
+
+---
+
+## Testing
+
+The project was tested across four levels. Full tables are documented in Chapter 4 of the project report.
+
+### Unit Tests
+
+| Function | Input | Expected Output | Result |
+|---|---|---|---|
+| `toCategoryLabel()` | `"development"` | `"Development"` | Pass |
+| `toCategoryLabel()` | Unknown string | Defaults to `"Data"` | Pass |
+| `getAccessStatus()` | Cohort within 0 years | `"active"` | Pass |
+| `getAccessStatus()` | Cohort >= 2 years | `"expired"` | Pass |
+| `getGpaStyle()` | GPA 3.85 | Dean's List style object | Pass |
+| `getInitials()` | `"David Achibiri"` | `"DA"` | Pass |
+| `formatDeadline()` | Date 2 days ahead | `"Due in 2 days"` | Pass |
+
+### Validation Tests
+
+| Endpoint | Input | Expected | Result |
+|---|---|---|---|
+| `POST /api/auth/request-code` | Missing email/role | HTTP 400 | Pass |
+| `POST /api/auth/request-code` | Student with non-ALU email | HTTP 400 | Pass |
+| `POST /api/auth/verify-code` | Wrong OTP code | HTTP 401 | Pass |
+| `POST /api/gigs` | Missing required fields | HTTP 400 | Pass |
+| `POST /api/orders` | Buyer role is not business | HTTP 403 | Pass |
+| `POST /api/orders` | Student booking own gig | HTTP 400 | Pass |
+
+### Integration Tests
+
+| Flow | Components Involved | Result |
+|---|---|---|
+| Full auth flow | Login page, request-code API, verify-code API, session cookie, dashboard redirect | Pass |
+| Student posts gig | Post-gig form, gigs API, DB, student dashboard | Pass |
+| Business books gig | Marketplace, gig detail, orders API, DB, student Active Orders | Pass |
+| Student delivers order | DeliverButton, deliverOrder action, DB, hustle score increment | Pass |
+| Business releases payment | ReleaseButton, release API, DB, order marked completed | Pass |
+
+### Acceptance Tests
+
+| User Story | Acceptance Criteria | Outcome |
+|---|---|---|
+| Log in as a student | Valid ALU email + OTP grants dashboard access | Accepted |
+| Post a gig | Gig saved and visible in marketplace after submission | Accepted |
+| Browse gigs as a student | Marketplace lists active gigs with filters | Accepted |
+| Book a gig as a business | Order created with pending status, visible in student dashboard | Accepted |
+| Deliver an order | Order status changes, hustle score increments by 10 | Accepted |
+| Release payment | Order moves to completed from business side | Accepted |
+| Role-based access | Student cannot access business dashboard and vice versa | Accepted |
+
+---
 
 ## Team
 
-| Name | Role |
-|---|---|
-| Menes Adisso | Project Manager |
-| Jean Nepo Munezero | Backend Lead |
-| Manuelle Ackun | Database Architect |
-| David Achibiri | Full-Stack Developer |
-| Bonheur Munezero | UI/UX Designer |
-| Gilbert Ntivunwa | Research Lead |
+| Name | Role | Email |
+|---|---|---|
+| Ménès Adisso | Project Manager, Frontend + Backend Overview | m.adisso@alustudent.com |
+| Jean Nepo Munezero | Backend Lead | j.munezero1@alustudent.com |
+| Gilbert Ntivunwa | Business Analyst | g.ntivunwa@alustudent.com |
+| David Achibiri | Frontend Lead | d.achibiri@alustudent.com |
+| Bonheur MUNEZERO | UI/UX Designer | b.munezero@alustudent.com |
+| Manuelle Ackun | Database Architect | m.ackun@alustudent.com |
+
+---
+
+## Acknowledgements
+
+- African Leadership University for the project brief and academic support
+- The World Bank and ILO for the research data that grounded the problem statement
+- Supabase for the hosted PostgreSQL infrastructure
+- Vercel for Next.js and deployment tooling
+- Recharts for the business dashboard analytics visualizations
+- Plus Jakarta Sans (Google Fonts) for the typography
 
 ---
 
 ## License
 
-This project is developed for academic purposes. All rights reserved by the project team and African Leadership University.
+This project was developed as an academic submission for the BSc. Software Engineering Foundations Project at African Leadership University, January 2026. All code is original work by Team Riptide — Group 4.
